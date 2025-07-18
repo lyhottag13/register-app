@@ -2,8 +2,56 @@
 <head>
     <link rel="icon" href="./assets/cotoicon.webp">
     <link rel="stylesheet" href="./app.css">
-    <title>Test</title>
+    <title>Registro de Cafeteras</title>
 </head>
 <body>
+    <div id="app-wrapper">
+        <div id="static-elements">
+            <input id="po" type="text" placeholder="PO #" maxlength="8">
+            <div id="datecode">
+                Datecode
+            </div>
+            <div id="po-count">
+                PO Count
+            </div>
+            <div id="today-count">
+                Today Count
+            </div>
+            <div id="date-time">
+                Date-Time
+            </div>
+        </div>
+        <div id="moving-screen">
+            <div id="screen-2">
+                <div class="center-grid">
+                    <input id="internal-serial" placeholder="Internal Serial">
+                    <input id="external-serial-1" placeholder="External Serial 1">
+                    <input id="external-serial-2" placeholder="External Serial 2">
+                    <input id="internal-id" placeholder="Internal ID">
+                </div>
+                <button id="close-order">Close Order</button>
+                <button id="continue">Continue</button>
+            </div>
+            <div id="screen-3">
+                <div class="center-grid">
+                    <input id="qc3-2-cup" placeholder="QC3 2 Cup">
+                    <input id="qc3-tiempo" placeholder="QC3 Tiempo">
+                    <input id="qc3-1-cup" placeholder="QC3 1 Cup">
+                    <div>
+                        <label>
+                            Other Tests
+                            <input id="other-tests" type="checkbox" >
+                        </label>
+                        <label>
+                            Rework
+                            <input id="rework" type="checkbox">
+                        </label>
+                    </div>
+                </div>
+                <input id="notes" type="text" placeholder="Notes">
+                <button id="submit">Submit</button>
+            </div>
+        </div>
+    </div>
     <script type="module" src="app.js"></script>
 </body>
