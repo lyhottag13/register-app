@@ -47,10 +47,11 @@ async function main() {
         // If I press , then fill out the first screen.
         if (event.key === ',') {
             poDiv.value = '30341278';
-            internalIdInput.value = '000002';
-            internalSerialInput.value = 'APBUAESA253000000';
-            externalSerial1Input.value = 'APBUAESA253000000';
-            externalSerial2Input.value = 'APBUAESA253000000';
+            internalIdInput.value = `0000${window.prompt('ID:')}`;
+            const serial = window.prompt('SERIAL:');
+            internalSerialInput.value = `APBUAESA2530000${serial}`;
+            externalSerial1Input.value = `APBUAESA2530000${serial}`;
+            externalSerial2Input.value = `APBUAESA2530000${serial}`;
         } else if (event.key === '.') {
             // If I press . then fill out the second screen.
             twoCupInput.value = '80';
@@ -58,7 +59,7 @@ async function main() {
             timeInput.value = '43';
         }
     })
-    // Automatically builds the datecode, formatted with the last two year digits and the week number, YYWW.
+    // Automatically builds the datecode, formatted with the last two year digits and the week number: YYWW.
     datecode.innerText = `Datecode: ${new Date().toISOString().slice(2, 4) + getISOWeek()}`;
 
     /*
@@ -78,7 +79,7 @@ async function main() {
             this.value = this.value.replace(/[^0-9]/g, '');
         }
     }
-
+    setInputValidations();
     closeOrderButton.disabled = true;
     document.querySelectorAll('.back').forEach(element => {
         element.addEventListener('click', handleBack);
@@ -87,6 +88,43 @@ async function main() {
     closeOrderButton.addEventListener('click', handleCloseOrder);
     continueButton.addEventListener('click', handleContinue);
     submitButton.addEventListener('click', handleSubmit);
+    reset();
+}
+
+function setInputValidations() {
+    internalSerialInput.addEventListener('input', handleSerialNumbers);
+    externalSerial1Input.addEventListener('input', handleSerialNumbers);
+    externalSerial2Input.addEventListener('input', handleSerialNumbers);
+    internalIdInput.addEventListener('input', handleId);
+    twoCupInput.addEventListener('input', function () {
+        setColorBasedOnRange(this, 75, 105);
+    });
+    oneCupInput.addEventListener('input', function () {
+        setColorBasedOnRange(this, 11, 21);
+    });
+    timeInput.addEventListener('input', function () {
+        setColorBasedOnRange(this, 36, 56);
+    });
+    function handleSerialNumbers() {
+        setColorBasedOnLength(this, 17);
+    }
+    function handleId() {
+        setColorBasedOnLength(this, 6);
+    }
+    function setColorBasedOnLength(object, length) {
+        if (object.value.length !== length) {
+            object.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+        } else {
+            object.style.backgroundColor = 'rgba(63, 255, 104, 1)';
+        }
+    }
+    function setColorBasedOnRange(object, min, max) {
+        if (object.value <= min || object.value >= max) {
+            object.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+        } else {
+            object.style.backgroundColor = 'rgba(63, 255, 104, 1)';
+        }
+    }
 }
 
 /**
@@ -94,8 +132,8 @@ async function main() {
  * swaps to the 1st screen.
  */
 async function handleActual() {
-    const poNumber = window.prompt('PO Number?');
-    poDiv.innerText = `po${poNumber}`;
+    const poNumber = `po${window.prompt('PO Number?')}`;
+    poDiv.innerText = poNumber;
     // Rudimentary poNumber check.
     if (poNumber && isValidPo(poNumber)) {
         swapScreens(1);
@@ -108,33 +146,35 @@ async function handleActual() {
  */
 async function isValidPo(poNumber) {
     // Only moves forward with the database query if poInput reaches 8 characters.
-    if (poNumber.length !== 8) {
+    if (poNumber.length !== 10) {
         return false;
     }
-    if (poNumber.length === 8) {
-        const poCount = await (await fetch('/api/poCount', {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                po: poDiv.innerText
-            })
-        })).json();
-        poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
-        poCountTodayDiv.innerText = `Today:\n${poCount.poCountToday}`;
-        // Allows the user to close the order when poCount is over 1150, since the program needs to know when to begin a new order.
-        // if (poCount.poCountTotal >= 1150 || window.confirm('Override?')) {
-        //     closeOrderButton.disabled = false;
-        // }
+    if (poNumber.length === 10) {
+        await updatePoCount();
     }
     return true;
 }
 
+async function updatePoCount() {
+    const poCount = await (await fetch('/api/poCount', {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            po: poDiv.innerText
+        })
+    })).json();
+    poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
+    poCountTodayDiv.innerText = `Today:\n${poCount.poCountToday}`;
+    // Allows the user to close the order when poCount is over 1150, since the program needs to know when to begin a new order.
+    // if (poCount.poCountTotal >= 1150 || window.confirm('Override?')) {
+    //     closeOrderButton.disabled = false;
+    // }
+}
+
 async function handleBack() {
-    console.log(currentScreen);
     swapScreens(--currentScreen);
-    console.log(currentScreen);
 }
 
 async function handleCloseOrder() {
@@ -148,7 +188,7 @@ async function handleCloseOrder() {
  * user inputs are valid, then continues to the 2nd screen.
  */
 async function handleContinue() {
-    if (await isValidFirstScreen()) {
+    if (await isValidFirstScreen() || window.confirm('Are you Diego?')) {
         currentRegistration.po = poDiv.innerText;
         currentRegistration.internalId = internalIdInput.value;
         currentRegistration.serialNumber = internalSerialInput.value;
@@ -177,9 +217,12 @@ async function handleSubmit() {
         currentRegistration.rework = reworkCheckBox.checked;
         currentRegistration.notes = notesInput.value;
         if (await sendRegistration(currentRegistration)) {
-            console.log('Submit Failure!');
-        } else {
             console.log('Successful Submit!');
+            swapScreens(1);
+            reset();
+            setTimeout(updatePoCount, 1000);
+        } else {
+            console.log('Submit Failure!');
         }
     } else {
         console.log('Failure 2!');
@@ -279,9 +322,9 @@ async function sendRegistration() {
         })
     })).json();
     if (data.err) {
-        return err;
+        return false;
     } else {
-        return;
+        return true;
     }
 }
 
@@ -301,6 +344,29 @@ async function swapScreens(index) {
         staticElementsTop.style.transform = 'translateY(-100%)';
         staticElementsBottom.style.transform = 'translateY(100vh)'
     }
+}
+
+/**
+ * Resets all the inputs: ID, serials, QC3s, and the checkboxes.
+ */
+function reset() {
+    internalSerialInput.value = '';
+    internalSerialInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+    externalSerial1Input.value = '';
+    externalSerial1Input.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+    externalSerial2Input.value = '';
+    externalSerial2Input.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+    internalIdInput.value = '';
+    internalIdInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+    twoCupInput.value = '';
+    twoCupInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+    oneCupInput.value = '';
+    oneCupInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+    timeInput.value = '';
+    timeInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+    otherTestsCheckBox.checked = false;
+    reworkCheckBox.checked = false;
+    notesInput.value = '';
 }
 
 // Runs the main function after everything else in the root of the js file has run.

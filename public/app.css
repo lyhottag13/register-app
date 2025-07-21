@@ -41,8 +41,8 @@ body {
     gap: 20px;
     color: white;
     background-color: rgb(222, 0, 0);
-    border-bottom-left-radius: 20px;
-    border-bottom-right-radius: 20px;
+    border-bottom-left-radius: 50px;
+    border-bottom-right-radius: 50px;
     transition: all 1s cubic-bezier(0.19, 1, 0.22, 1);
     z-index: 100;
 }
@@ -84,7 +84,7 @@ body {
     padding-top: 30px;
     padding-bottom: 30px;
     padding-left: 10px;
-    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    font-family: 'Arial Narrow', Arial, sans-serif;
     border-radius: 20px;
     font-size: 60px;
 }
@@ -103,10 +103,10 @@ body {
 #screen-0 button {
     background-color: rgb(162, 244, 255);
     color: rgb(0, 0, 0);
-    height: 300px;
-    width: 300px;
+    height: 30vh;
+    width: 40vw;
     border-radius: 20px;
-    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-family: Impact, 'Arial Narrow Bold', sans-serif;
     font-size: 80px;
     border: 0;
     transition: all 0.2s cubic-bezier(0.075, 0.82, 0.165, 1);
@@ -131,6 +131,12 @@ body {
 .buttons button:nth-child(1) {
     background-color: rgb(255, 76, 76);
 }
+.buttons textarea {
+    border-radius: 20px;
+    padding-left: 10px;
+    border: solid 3px black;
+}
+
 .buttons button:nth-child(3) {
     background-color: rgb(113, 255, 85);
 }

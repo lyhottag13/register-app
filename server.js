@@ -77,19 +77,24 @@ app.post('/api/registration', async (req, res) => {
     const r = req.body.currentRegistration; // Shortened so I have to type less.
     const sqlStringInsert = `
     INSERT INTO test_tracker (id_tracker, po_order, serial_number, numero_cafetera, datecode, rework,
-        prod_status, qc2_conectado_r, qc2_pump_r, qc2_thermocoil_r, qc2_heattiempo_r,
-        qc2_manometro_r, qc2_cafetera, qc2_filtro_r, qc3_2cup_r, qc3_1cup_r, qc3_tiempo_r, emp_datetime, comments)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        qc1_ground, qc1_1erhipot, a131_leakage, prod_status, qc2_conectado_r, qc2_pump_r, qc2_thermocoil_r, qc2_heattiempo_r,
+        qc2_manometro_r, qc2_cafetera, qc2_filtro_r, qc3_2cup_r, qc3_1cup_r, qc3_tiempo_r, qc3_agua, qc3_steam, qc4_2dohipot,
+        qc4_2daprueba, emp_datetime, comments)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     try {
-        const [[{ currentId }]] = await pool.query('SELECT MAX(id_tracker) as nextId FROM test_tracker');
+        const [[{ currentId }]] = await pool.query('SELECT MAX(id_tracker) as currentId FROM test_tracker');
+        console.log(currentId);
         const values = [
             currentId + 1, // id_tracker
             r.po, // po_order
             r.serialNumber, // serial_number
             r.internalId, // numero_cafetera
-            r.datecode, // datecode
+            r.datecode.slice(10), // datecode
             r.rework ? 1 : 0, // If rework is 1, it's true, otherwise it's false, rework
+            'PASS',
+            'PASS',
+            'PASS',
             'Empacada', // If a registration made it to this stage, it'll always be this, prod_status
             r.qc2.initial_wattage, // conectado
             r.qc2.pump_wattage, // pump
@@ -101,14 +106,18 @@ app.post('/api/registration', async (req, res) => {
             r.twoCup, // 2cup
             r.oneCup, // 1cup
             r.time, // tiempo
+            'PASS',
+            'PASS',
+            'PASS',
+            'PASS',
             `${new Date().toLocaleDateString('en-CA')} ${new Date().toLocaleTimeString('en-US', { hour12: false })}`, // YY-MM-DD XX:XX:XX
             r.notes // comments
         ];
         console.log(values);
         pool.execute(sqlStringInsert, values);
     } catch (err) {
-        res.json({ err });
+        res.json({ isSuccessfulSubmit: false, err });
     }
-    res.json();
+    res.json({ isSuccessfulSubmit: true });
 });
 
