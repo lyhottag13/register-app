@@ -141,12 +141,13 @@ async function handleActual() {
     }
 }
 /**
- * Handles whenever the poInput changes. The PO requires 8 characters, so the
- * program runs a script when it senses 8 characters. It sends the PO to the server
- * and retrieves the number of coffee makers already submitted using that PO.
+ * Checks if the poNumber is valid. The PO requires 10 characters.  If the 
+ * number is valid, it is sent to the server.
+ * @param {number} poNumber 
+ * @returns If the poNumber is valid.
  */
 async function isValidPo(poNumber) {
-    // Only moves forward with the database query if poInput reaches 8 characters.
+    // Only moves forward with the database query if poNumber is 10 characters.
     if (poNumber.length !== 10) {
         return false;
     }
