@@ -1,38 +1,43 @@
 <!DOCTYPE html>
+
 <head>
     <link rel="icon" href="./assets/cotoicon.webp">
     <link rel="stylesheet" href="./app.css">
     <title>Registro de Cafeteras</title>
 </head>
+
 <body>
     <div id="app-wrapper">
         <div id="static-elements">
-            <input id="po" type="text" placeholder="PO #" maxlength="8">
-            <div id="datecode">
-                Datecode
+            <div id="static-elements-top">
+                <div id="po"></div>
+                <div id="datecode">Datecode:</div>
+                <div id="po-count">Total:</div>
+                <div id="today-count">Today:</div>
             </div>
-            <div id="po-count">
-                PO Count
-            </div>
-            <div id="today-count">
-                Today Count
-            </div>
-            <div id="date-time">
-                Date-Time
+            <div id="static-elements-bottom">
+                <div id="date-time">I'm the date-time :D</div>
             </div>
         </div>
         <div id="moving-screen">
-            <div id="screen-2">
+            <div id="screen-0" class="screen">
+                <button id="actual">PO Actual</button>
+                <button id="special">PO Especial</button>
+            </div>
+            <div id="screen-1" class="screen">
                 <div class="center-grid">
                     <input id="internal-serial" placeholder="Internal Serial" maxlength="17">
                     <input id="external-serial-1" placeholder="External Serial 1" maxlength="17">
                     <input id="external-serial-2" placeholder="External Serial 2" maxlength="17">
                     <input id="internal-id" placeholder="Internal ID" class="number" maxlength="6">
                 </div>
-                <button id="close-order">Close Order</button>
-                <button id="continue">Continue</button>
+                <div id="buttons-1" class="buttons">
+                    <button id="back-1" class="back">Back</button>
+                    <button id="close-order">Close Order</button>
+                    <button id="continue">Continue</button>
+                </div>
             </div>
-            <div id="screen-3">
+            <div id="screen-2" class="screen">
                 <div class="center-grid">
                     <input id="qc3-2-cup" placeholder="QC3 2 Cup" class="number" maxlength="3">
                     <input id="qc3-time" placeholder="QC3 Tiempo" class="number" maxlength="3">
@@ -40,7 +45,7 @@
                     <div>
                         <label>
                             Other Tests
-                            <input id="other-tests" type="checkbox" >
+                            <input id="other-tests" type="checkbox">
                         </label>
                         <label>
                             Rework
@@ -48,8 +53,11 @@
                         </label>
                     </div>
                 </div>
-                <input id="notes" type="text" placeholder="Notes">
-                <button id="submit">Submit</button>
+                <div id="buttons-2" class="buttons">
+                    <button id="back-2" class="back">Back</button>
+                    <textarea id="notes" placeholder="Notes"></textarea>
+                    <button id="submit">Submit</button>
+                </div>
             </div>
         </div>
     </div>

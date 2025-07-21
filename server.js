@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
     console.log(`App running on port ${port}`);
 });
 
@@ -29,17 +29,17 @@ app.get('/', (req, res) => {
 });
 
 // Checks to see if the connection between the app and the server is successful before continuing.
-app.get('/api/testConnection', async (req, res) => {
-    res.json({ connectionSuccessful: await testConnection() });
-})
+// app.get('/api/testConnection', async (req, res) => {
+//     res.json({ connectionSuccessful: await testConnection() });
+// });
 
 app.post('/api/poCount', async (req, res) => {
     // Reusable SQL query for the PO counts at the top of the screen.
     const SQLQuery = 'SELECT count(id_tracker) as poCount FROM test_tracker WHERE po_order LIKE ?';
-    const [rowsTotal] = await pool.query(SQLQuery, [`po${req.body.po}`]);
+    const [rowsTotal] = await pool.query(SQLQuery, [req.body.po]);
 
     const today = new Date().toLocaleDateString('en-CA').slice(0, 10); // Date in YYYY-MM-DD format since that's what the DB uses.
-    const [rowsToday] = await pool.query(`${SQLQuery} AND emp_datetime LIKE ?`, [`po${req.body.po}`, `${today}%`]);
+    const [rowsToday] = await pool.query(`${SQLQuery} AND emp_datetime LIKE ?`, [req.body.po, `${today}%`]);
     res.json({ poCountTotal: rowsTotal[0].poCount, poCountToday: rowsToday[0].poCount });
 });
 

@@ -1,6 +1,8 @@
 import getISOWeek from "./utils/getISOWeek.js";
 
-const poInput = document.getElementById('po');
+const poDiv = document.getElementById('po');
+const actualButton = document.getElementById('actual');
+const specialButton = document.getElementById('special');
 const closeOrderButton = document.getElementById('close-order');
 const continueButton = document.getElementById('continue');
 const submitButton = document.getElementById('submit');
@@ -19,27 +21,32 @@ const otherTestsCheckBox = document.getElementById('other-tests');
 const reworkCheckBox = document.getElementById('rework');
 const notesInput = document.getElementById('notes');
 
+const staticElementsTop = document.getElementById('static-elements-top');
 const datecode = document.getElementById('datecode');
 const poCountTotalDiv = document.getElementById('po-count');
 const poCountTodayDiv = document.getElementById('today-count');
+const staticElementsBottom = document.getElementById('static-elements-bottom');
+const dateTime = document.getElementById('date-time');
 
 // The current registration represented as an object to hold any number of properties.
 const currentRegistration = {};
 
+let currentScreen = 0; // Tracks the current screen, used in the back button.
+
 async function main() {
     // Checks for a successful connection to the database before continuing.
-    const { connectionSuccessful } = await (await fetch('/api/testConnection')).json();
-    if (connectionSuccessful) {
-        window.alert('Successful Connection!');
-    } else {
-        window.alert('Connection Failed!');
-        return;
-    }
+    // const { connectionSuccessful } = await (await fetch('/api/testConnection')).json();
+    // if (connectionSuccessful) {
+    //     window.alert('Successful Connection!');
+    // } else {
+    //     window.alert('Connection Failed!');
+    //     return;
+    // }
     // For testing, fills out the first screen with sample values.
     document.addEventListener('keydown', event => {
         // If I press , then fill out the first screen.
         if (event.key === ',') {
-            poInput.value = '30341278';
+            poDiv.value = '30341278';
             internalIdInput.value = '000002';
             internalSerialInput.value = 'APBUAESA253000000';
             externalSerial1Input.value = 'APBUAESA253000000';
@@ -52,7 +59,17 @@ async function main() {
         }
     })
     // Automatically builds the datecode, formatted with the last two year digits and the week number, YYWW.
-    datecode.innerText = new Date().toISOString().slice(2, 4) + getISOWeek();
+    datecode.innerText = `Datecode: ${new Date().toISOString().slice(2, 4) + getISOWeek()}`;
+
+    /*
+    Starts the date-time clock. 
+    The first new Date() isn't really necessary since it can't be seen
+    initially, but the layout might change later.
+    */
+    dateTime.innerText = new Date().toLocaleString();
+    setInterval(() => {
+        dateTime.innerText = new Date().toLocaleString();
+    }, 1000);
 
     // Forces every number input to receive only numbers through regex.
     const textInputs = document.getElementsByClassName('number');
@@ -63,39 +80,61 @@ async function main() {
     }
 
     closeOrderButton.disabled = true;
-    submitButton.disabled = true;
+    document.querySelectorAll('.back').forEach(element => {
+        element.addEventListener('click', handleBack);
+    })
+    actualButton.addEventListener('click', handleActual);
     closeOrderButton.addEventListener('click', handleCloseOrder);
-    poInput.addEventListener('input', handlePoInputChange);
     continueButton.addEventListener('click', handleContinue);
     submitButton.addEventListener('click', handleSubmit);
+}
+
+/**
+ * Handles the PO Actual button on the 0th screen. Asks for a PO number and
+ * swaps to the 1st screen.
+ */
+async function handleActual() {
+    const poNumber = window.prompt('PO Number?');
+    poDiv.innerText = `po${poNumber}`;
+    // Rudimentary poNumber check.
+    if (poNumber && isValidPo(poNumber)) {
+        swapScreens(1);
+    }
 }
 /**
  * Handles whenever the poInput changes. The PO requires 8 characters, so the
  * program runs a script when it senses 8 characters. It sends the PO to the server
  * and retrieves the number of coffee makers already submitted using that PO.
  */
-async function handlePoInputChange() {
-    closeOrderButton.disabled = true;
+async function isValidPo(poNumber) {
     // Only moves forward with the database query if poInput reaches 8 characters.
-    if (poInput.value.length === 8) {
-        poInput.disabled = true;
+    if (poNumber.length !== 8) {
+        return false;
+    }
+    if (poNumber.length === 8) {
         const poCount = await (await fetch('/api/poCount', {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                po: poInput.value
+                po: poDiv.innerText
             })
         })).json();
-        poCountTotalDiv.innerText = poCount.poCountTotal;
-        poCountTodayDiv.innerText = poCount.poCountToday;
+        poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
+        poCountTodayDiv.innerText = `Today:\n${poCount.poCountToday}`;
         // Allows the user to close the order when poCount is over 1150, since the program needs to know when to begin a new order.
-        if (poCount.poCountTotal >= 1150 || window.confirm('Override?')) {
-            closeOrderButton.disabled = false;
-        }
+        // if (poCount.poCountTotal >= 1150 || window.confirm('Override?')) {
+        //     closeOrderButton.disabled = false;
+        // }
     }
-    poInput.disabled = false;
+    return true;
+}
+
+async function handleBack() {
+    console.log(currentScreen);
+    swapScreens(--currentScreen);
+    console.log(currentScreen);
 }
 
 async function handleCloseOrder() {
@@ -104,15 +143,18 @@ async function handleCloseOrder() {
     closeOrderButton.disabled = true;
 }
 
+/**
+ * Handles the continue button. This checks to see if the 1st screen's
+ * user inputs are valid, then continues to the 2nd screen.
+ */
 async function handleContinue() {
     if (await isValidFirstScreen()) {
-        currentRegistration.po = poInput.value;
+        currentRegistration.po = poDiv.innerText;
         currentRegistration.internalId = internalIdInput.value;
         currentRegistration.serialNumber = internalSerialInput.value;
         currentRegistration.datecode = datecode.innerText;
-        submitButton.disabled = false;
-        continueButton.disabled = true;
         console.log('Successful First Screen!');
+        swapScreens(2);
     } else {
         console.log('Failure 1!');
     }
@@ -124,6 +166,9 @@ async function handleContinue() {
  * captures it into currentRegistration, then sends it to the server.
  */
 async function handleSubmit() {
+    if (!window.confirm('Submit?')) {
+        return;
+    }
     if (await isValidSecondScreen()) {
         console.log('Successful Second Screen!');
         currentRegistration.twoCup = twoCupInput.value;
@@ -160,7 +205,7 @@ async function isValidFirstScreen() {
         return false;
     }
     const serialNumberDatecode = internalSerialInput.value.slice(8, 12);
-    if (serialNumberDatecode !== datecode.innerText) {
+    if (serialNumberDatecode !== datecode.innerText.slice(10)) {
         console.log('Datecode Invalid!');
         return false;
     }
@@ -237,6 +282,24 @@ async function sendRegistration() {
         return err;
     } else {
         return;
+    }
+}
+
+/**
+ * Swaps between the main screens. Index 0 is the two-button actual/special screen,
+ * 1 is the first user input screen, and 2 is the second user input screen.
+ * @param {number} index The index of the desired screen.
+ */
+async function swapScreens(index) {
+    currentScreen = index;
+    document.getElementById('moving-screen').style.transform = `translateX(-${index * 100}vw)`;
+    // Moves the staticElements at the top/bottom of the screen out of/into view since they're only used on the index 1 and 2 screens.
+    if (index > 0) {
+        staticElementsTop.style.transform = 'translateY(0)';
+        staticElementsBottom.style.transform = 'translateY(100vh) translateY(-100%)';
+    } else {
+        staticElementsTop.style.transform = 'translateY(-100%)';
+        staticElementsBottom.style.transform = 'translateY(100vh)'
     }
 }
 
