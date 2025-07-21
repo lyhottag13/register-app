@@ -123,6 +123,7 @@ body {
     height: 15vh;
     gap: 20px;
 }
+
 .buttons button {
     border-radius: 20px;
     border: 0;
@@ -131,6 +132,7 @@ body {
 .buttons button:nth-child(1) {
     background-color: rgb(255, 76, 76);
 }
+
 .buttons textarea {
     border-radius: 20px;
     padding-left: 10px;
@@ -143,6 +145,11 @@ body {
 
 #screen-2 {
     background-color: aliceblue;
+}
+
+#checkBoxesPanel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
 }
 
 #notes {

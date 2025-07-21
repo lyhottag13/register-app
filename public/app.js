@@ -1,4 +1,5 @@
 import getISOWeek from "./utils/getISOWeek.js";
+import { Slider } from "./utils/slider.js";
 
 const poDiv = document.getElementById('po');
 const actualButton = document.getElementById('actual');
@@ -17,8 +18,8 @@ const internalIdInput = document.getElementById('internal-id');
 const twoCupInput = document.getElementById('qc3-2-cup');
 const timeInput = document.getElementById('qc3-time');
 const oneCupInput = document.getElementById('qc3-1-cup');
-const otherTestsCheckBox = document.getElementById('other-tests');
-const reworkCheckBox = document.getElementById('rework');
+const otherTestCheckBox = new Slider(document.getElementById('other-tests'), false);
+const reworkCheckBox = new Slider(document.getElementById('rework'), false);
 const notesInput = document.getElementById('notes');
 
 const staticElementsTop = document.getElementById('static-elements-top');
@@ -60,7 +61,7 @@ async function main() {
         }
     })
     // Automatically builds the datecode, formatted with the last two year digits and the week number: YYWW.
-    datecode.innerText = `Datecode: ${new Date().toISOString().slice(2, 4) + getISOWeek()}`;
+    datecode.innerText = `Datecode:\n${new Date().toISOString().slice(2, 4) + getISOWeek()}`;
 
     /*
     Starts the date-time clock. 
@@ -214,7 +215,7 @@ async function handleSubmit() {
         currentRegistration.twoCup = twoCupInput.value;
         currentRegistration.time = timeInput.value;
         currentRegistration.oneCup = oneCupInput.value;
-        currentRegistration.rework = reworkCheckBox.checked;
+        currentRegistration.rework = reworkCheckBox.value;
         currentRegistration.notes = notesInput.value;
         if (await sendRegistration(currentRegistration)) {
             console.log('Successful Submit!');
@@ -299,7 +300,7 @@ async function isValidSecondScreen() {
     if (oneCupInput.value < 11 || oneCupInput.value > 21) {
         return false;
     }
-    if (!otherTestsCheckBox.checked) {
+    if (!otherTestCheckBox.value) {
         return false;
     }
     return true;
@@ -364,8 +365,8 @@ function reset() {
     oneCupInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
     timeInput.value = '';
     timeInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
-    otherTestsCheckBox.checked = false;
-    reworkCheckBox.checked = false;
+    otherTestCheckBox.setValue(false);
+    reworkCheckBox.setValue(false);
     notesInput.value = '';
 }
 
