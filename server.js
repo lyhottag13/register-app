@@ -38,7 +38,7 @@ app.post('/api/poCount', async (req, res) => {
     const SQLQuery = 'SELECT count(id_tracker) as poCount FROM test_tracker WHERE po_order LIKE ?';
     const [rowsTotal] = await pool.query(SQLQuery, [`po${req.body.po}`]);
 
-    const today = new Date().toISOString().slice(0, 10); // Date in YYYY-MM-DD format since that's what the DB uses.
+    const today = new Date().toLocaleDateString('en-CA').slice(0, 10); // Date in YYYY-MM-DD format since that's what the DB uses.
     const [rowsToday] = await pool.query(`${SQLQuery} AND emp_datetime LIKE ?`, [`po${req.body.po}`, `${today}%`]);
     res.json({ poCountTotal: rowsTotal[0].poCount, poCountToday: rowsToday[0].poCount });
 });
@@ -49,19 +49,61 @@ app.post('/api/poCount', async (req, res) => {
  */
 app.post('/api/firstSend', async (req, res) => {
     // Reusable SQL query to return whether or not the internal ID or serial number already exist.
-    const SQLString = 'SELECT count(id_tracker) as count FROM test_tracker WHERE';
+    const sqlStringCount = `
+    SELECT
+        COUNT(CASE WHEN serial_number LIKE ? THEN 1 END) as serialCount,
+        COUNT(CASE WHEN numero_cafetera = ? THEN 1 END) as idCount
+    FROM test_tracker`;
 
-    const [serialCountRows] = await pool.query(`${SQLString} serial_number LIKE ?`, [req.body.serialNumber]);
-    if (serialCountRows[0].count !== 0) {
-        res.json({ isValidFirstSend: false });
-        return;
-    }
+    // Double destructuring since the query returns the rows and metadata.
+    const [[rowsCount]] = await pool.query(sqlStringCount, [req.body.serialNumber, req.body.internalId]);
 
-    // To prevent unnecessary queries, we only run the ID count if the serial number count was successful.
-    const [idCountRows] = await pool.query(`${SQLString} numero_cafetera = ?`, [req.body.internalId]);
-    if (idCountRows[0].count !== 0) {
-        res.json({ isValidFirstSend: false });
-        return;
+    const isValidFirstSend = rowsCount.serialCount === 0 && rowsCount.idCount === 0;
+    if (isValidFirstSend) {
+        // Searches for a corresponding row in qc2 based on the internal ID.
+        const sqlStringQc2 = `
+        SELECT * FROM qc2 
+        WHERE internal_number = ? 
+        AND final_status = 'PASS' 
+        ORDER BY date DESC`;
+        const [[qc2]] = await pool.query(sqlStringQc2, [req.body.internalId]);
+        res.json({ isValidFirstSend: qc2 ? true : false, qc2, err: 'No Rows Found!' });
+    } else {
+        res.json({ isValidFirstSend });
     }
-    res.json({ isValidFirstSend: true });
 });
+
+app.post('/api/registration', async (req, res) => {
+    const r = req.body.currentRegistration; // Shortened so I have to type less.
+    const sqlStringInsert = `
+    INSERT INTO test_tracker (id_tracker, po_order, serial_number, numero_cafetera, datecode, rework,
+        prod_status, qc2_conectado_r, qc2_pump_r, qc2_thermocoil_r, qc2_heattiempo_r,
+        qc2_manometro_r, qc2_cafetera, qc2_filtro_r, qc3_2cup_r, qc3_1cup_r, qc3_tiempo_r, emp_datetime, comments)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    let [[{ nextId }]] = await pool.query('SELECT MAX(id_tracker) as nextId FROM test_tracker');
+    const values = [
+        nextId + 1,
+        r.po,
+        r.serialNumber,
+        r.internalId,
+        r.datecode,
+        r.rework ? 1 : 0,
+        'Empacada', // If a registration made it to this stage, it'll always be this, prod_status
+        r.qc2.initial_wattage, // conectado
+        r.qc2.pump_wattage, // pump
+        r.qc2.heating, // thermocoil
+        r.qc2.heating_time, // heattiempo 
+        r.qc2.bar_opv, // manometro
+        r.qc2.final_status, // This should always be PASS, cafetera
+        r.qc2.dual_wall_filter, // filtro
+        r.twoCup, // 2cup
+        r.oneCup, // 1cup
+        r.time, // tiempo
+        `${new Date().toLocaleDateString('en-CA')} ${new Date().toLocaleTimeString('en-US', { hour12: false })}`, // YY-MM-DD XX:XX:XX
+        r.notes
+    ];
+    console.log(values);
+    pool.execute(sqlStringInsert, values);
+});
+
