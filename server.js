@@ -81,29 +81,34 @@ app.post('/api/registration', async (req, res) => {
         qc2_manometro_r, qc2_cafetera, qc2_filtro_r, qc3_2cup_r, qc3_1cup_r, qc3_tiempo_r, emp_datetime, comments)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    let [[{ nextId }]] = await pool.query('SELECT MAX(id_tracker) as nextId FROM test_tracker');
-    const values = [
-        nextId + 1,
-        r.po,
-        r.serialNumber,
-        r.internalId,
-        r.datecode,
-        r.rework ? 1 : 0,
-        'Empacada', // If a registration made it to this stage, it'll always be this, prod_status
-        r.qc2.initial_wattage, // conectado
-        r.qc2.pump_wattage, // pump
-        r.qc2.heating, // thermocoil
-        r.qc2.heating_time, // heattiempo 
-        r.qc2.bar_opv, // manometro
-        r.qc2.final_status, // This should always be PASS, cafetera
-        r.qc2.dual_wall_filter, // filtro
-        r.twoCup, // 2cup
-        r.oneCup, // 1cup
-        r.time, // tiempo
-        `${new Date().toLocaleDateString('en-CA')} ${new Date().toLocaleTimeString('en-US', { hour12: false })}`, // YY-MM-DD XX:XX:XX
-        r.notes
-    ];
-    console.log(values);
-    pool.execute(sqlStringInsert, values);
+    try {
+        const [[{ currentId }]] = await pool.query('SELECT MAX(id_tracker) as nextId FROM test_tracker');
+        const values = [
+            currentId + 1, // id_tracker
+            r.po, // po_order
+            r.serialNumber, // serial_number
+            r.internalId, // numero_cafetera
+            r.datecode, // datecode
+            r.rework ? 1 : 0, // If rework is 1, it's true, otherwise it's false, rework
+            'Empacada', // If a registration made it to this stage, it'll always be this, prod_status
+            r.qc2.initial_wattage, // conectado
+            r.qc2.pump_wattage, // pump
+            r.qc2.heating, // thermocoil
+            r.qc2.heating_time, // heattiempo 
+            r.qc2.bar_opv, // manometro
+            r.qc2.final_status, // This should always be PASS, cafetera
+            r.qc2.dual_wall_filter, // filtro
+            r.twoCup, // 2cup
+            r.oneCup, // 1cup
+            r.time, // tiempo
+            `${new Date().toLocaleDateString('en-CA')} ${new Date().toLocaleTimeString('en-US', { hour12: false })}`, // YY-MM-DD XX:XX:XX
+            r.notes // comments
+        ];
+        console.log(values);
+        pool.execute(sqlStringInsert, values);
+    } catch (err) {
+        res.json({ err });
+    }
+    res.json();
 });
 

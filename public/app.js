@@ -23,10 +23,11 @@ const datecode = document.getElementById('datecode');
 const poCountTotalDiv = document.getElementById('po-count');
 const poCountTodayDiv = document.getElementById('today-count');
 
+// The current registration represented as an object to hold any number of properties.
 const currentRegistration = {};
 
 async function main() {
-    // Checks to see if a successful connection could be made to the database before continuing.
+    // Checks for a successful connection to the database before continuing.
     const { connectionSuccessful } = await (await fetch('/api/testConnection')).json();
     if (connectionSuccessful) {
         window.alert('Successful Connection!');
@@ -39,10 +40,10 @@ async function main() {
         // If I press , then fill out the first screen.
         if (event.key === ',') {
             poInput.value = '30341278';
-            internalIdInput.value = '123456';
-            internalSerialInput.value = 'APBUAESA252900000';
-            externalSerial1Input.value = 'APBUAESA252900000';
-            externalSerial2Input.value = 'APBUAESA252900000';
+            internalIdInput.value = '000002';
+            internalSerialInput.value = 'APBUAESA253000000';
+            externalSerial1Input.value = 'APBUAESA253000000';
+            externalSerial2Input.value = 'APBUAESA253000000';
         } else if (event.key === '.') {
             // If I press . then fill out the second screen.
             twoCupInput.value = '80';
@@ -53,7 +54,7 @@ async function main() {
     // Automatically builds the datecode, formatted with the last two year digits and the week number, YYWW.
     datecode.innerText = new Date().toISOString().slice(2, 4) + getISOWeek();
 
-    // Forces every number input to receive numbers only through regex.
+    // Forces every number input to receive only numbers through regex.
     const textInputs = document.getElementsByClassName('number');
     for (let numberInput of textInputs) {
         numberInput.oninput = function () {
@@ -68,10 +69,14 @@ async function main() {
     continueButton.addEventListener('click', handleContinue);
     submitButton.addEventListener('click', handleSubmit);
 }
-
+/**
+ * Handles whenever the poInput changes. The PO requires 8 characters, so the
+ * program runs a script when it senses 8 characters. It sends the PO to the server
+ * and retrieves the number of coffee makers already submitted using that PO.
+ */
 async function handlePoInputChange() {
-    // Only moves forward with the database query if poInput reaches 8 characters.
     closeOrderButton.disabled = true;
+    // Only moves forward with the database query if poInput reaches 8 characters.
     if (poInput.value.length === 8) {
         poInput.disabled = true;
         const poCount = await (await fetch('/api/poCount', {
@@ -90,7 +95,6 @@ async function handlePoInputChange() {
             closeOrderButton.disabled = false;
         }
     }
-
     poInput.disabled = false;
 }
 
@@ -102,18 +106,23 @@ async function handleCloseOrder() {
 
 async function handleContinue() {
     if (await isValidFirstScreen()) {
-        console.log('Successful First Screen!');
-        submitButton.disabled = false;
-        continueButton.disabled = true;
         currentRegistration.po = poInput.value;
         currentRegistration.internalId = internalIdInput.value;
         currentRegistration.serialNumber = internalSerialInput.value;
         currentRegistration.datecode = datecode.innerText;
+        submitButton.disabled = false;
+        continueButton.disabled = true;
+        console.log('Successful First Screen!');
     } else {
         console.log('Failure 1!');
     }
 }
 
+/**
+ * Handles the submit button on the second screen using currentRegistration's 
+ * information. It validates all the information on the second screen and
+ * captures it into currentRegistration, then sends it to the server.
+ */
 async function handleSubmit() {
     if (await isValidSecondScreen()) {
         console.log('Successful Second Screen!');
@@ -122,7 +131,11 @@ async function handleSubmit() {
         currentRegistration.oneCup = oneCupInput.value;
         currentRegistration.rework = reworkCheckBox.checked;
         currentRegistration.notes = notesInput.value;
-        sendRegistration(currentRegistration);
+        if (await sendRegistration(currentRegistration)) {
+            console.log('Submit Failure!');
+        } else {
+            console.log('Successful Submit!');
+        }
     } else {
         console.log('Failure 2!');
     }
@@ -181,6 +194,13 @@ async function sendPotentialFirstScreen() {
     return data;
 }
 
+/**
+ * Checks if the second screen's inputs are valid. This doesn't need a POST
+ * to the server, so it's relatively simple. It checks the 2 Cup, 1 Cup, and
+ * Tiempo inputs for validity in a range of values. This also checks the 
+ * selection of the otherTestsCheckBox, which serves only as a reminder for
+ * the operator that all the tests are PASSes.
+ */
 async function isValidSecondScreen() {
     if (twoCupInput.value < 75 || twoCupInput.value > 105) {
         return false;
@@ -197,6 +217,12 @@ async function isValidSecondScreen() {
     return true;
 }
 
+/**
+ * Sends the completed registration data to the database. There is a .query() and a .execute()
+ * used on the server-side code, so those are the only possibilities for errors here. Usually,
+ * an error with the database connection is flagged at the very beginning of the program, so
+ * errors aren't common here.
+ */
 async function sendRegistration() {
     const data = await (await fetch('/api/registration', {
         method: "POST",
@@ -207,6 +233,11 @@ async function sendRegistration() {
             currentRegistration
         })
     })).json();
+    if (data.err) {
+        return err;
+    } else {
+        return;
+    }
 }
 
 // Runs the main function after everything else in the root of the js file has run.
