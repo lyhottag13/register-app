@@ -1,4 +1,5 @@
 import getISOWeek from "./utils/getISOWeek.js";
+import { getPoNumber, createModal } from "./utils/poModal.js";
 import { Slider } from "./utils/slider.js";
 
 const poDiv = document.getElementById('po');
@@ -35,6 +36,7 @@ const currentRegistration = {};
 let currentScreen = 0; // Tracks the current screen, used in the back button.
 
 async function main() {
+    createModal(); // Creates the PO number modal for later use.
     // Checks for a successful connection to the database before continuing.
     // const { connectionSuccessful } = await (await fetch('/api/testConnection')).json();
     // if (connectionSuccessful) {
@@ -133,26 +135,23 @@ function setInputValidations() {
  * swaps to the 1st screen.
  */
 async function handleActual() {
-    const poNumber = `po${window.prompt('PO Number?')}`;
+    const poNumber = `po${await getPoNumber()}`;
     poDiv.innerText = poNumber;
     // Rudimentary poNumber check.
-    if (poNumber && isValidPo(poNumber)) {
+    if (isValidPo(poNumber)) {
+        updatePoCount();
         swapScreens(1);
     }
 }
 /**
- * Checks if the poNumber is valid. The PO requires 10 characters.  If the 
- * number is valid, it is sent to the server.
- * @param {number} poNumber 
+ * Checks if the poNumber is valid. The PO requires 10 characters, including
+ * the po at the beginning.
+ * @param {number} poNumber The PO number as poXXXXXXXX.
  * @returns If the poNumber is valid.
  */
-async function isValidPo(poNumber) {
-    // Only moves forward with the database query if poNumber is 10 characters.
+function isValidPo(poNumber) {
     if (poNumber.length !== 10) {
         return false;
-    }
-    if (poNumber.length === 10) {
-        await updatePoCount();
     }
     return true;
 }
