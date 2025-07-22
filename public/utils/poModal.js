@@ -15,7 +15,7 @@ export function createModal() {
 export async function getPoNumber() {
     const activePo = await getActivePo();
     if (activePo) {
-        if (window.confirm('Use active Po?')) {
+        if (window.confirm(`Use Active PO? (${activePo})`)) {
             return activePo.slice(2); // Slices since the PO starts with po.
         }
     }

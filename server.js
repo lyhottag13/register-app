@@ -48,7 +48,7 @@ app.post('/api/poCount', async (req, res) => {
  * internal ID already exist in the database, then returns the results.
  */
 app.post('/api/firstSend', async (req, res) => {
-    // Reusable SQL query to return whether or not the internal ID or serial number already exist.
+    // SQL query to return whether or not the internal ID or serial number already exist in test_tracker.
     const sqlStringCount = `
     SELECT
         COUNT(CASE WHEN serial_number LIKE ? THEN 1 END) as serialCount,
@@ -58,18 +58,23 @@ app.post('/api/firstSend', async (req, res) => {
     // Double destructuring since the query returns the rows and metadata.
     const [[rowsCount]] = await pool.query(sqlStringCount, [req.body.serialNumber, req.body.internalId]);
 
-    const isValidFirstSend = rowsCount.serialCount === 0 && rowsCount.idCount === 0;
-    if (isValidFirstSend) {
+    const isNewRegistration = rowsCount.serialCount === 0 && rowsCount.idCount === 0;
+    if (isNewRegistration) {
         // Searches for a corresponding row in qc2 based on the internal ID.
         const sqlStringQc2 = `
         SELECT * FROM qc2 
         WHERE internal_number = ? 
         AND final_status = 'PASS' 
         ORDER BY date DESC`;
+
         const [[qc2]] = await pool.query(sqlStringQc2, [req.body.internalId]);
-        res.json({ isValidFirstSend: qc2 ? true : false, qc2, err: 'No Rows Found!' });
+        if (qc2) {
+            res.json({ isValidFirstSend: true, qc2});
+        } else {
+            res.json({ isValidFirstSend: false, err: 'No Rows Found!' });
+        }
     } else {
-        res.json({ isValidFirstSend });
+        res.json({ isValidFirstSend: false, err: 'Not a unique registration!'});
     }
 });
 
