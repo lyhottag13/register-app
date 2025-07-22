@@ -1,5 +1,5 @@
 import getISOWeek from "./utils/getISOWeek.js";
-import { getPoNumber, createModal } from "./utils/poModal.js";
+import { getPoNumber, createModal, setActivePo } from "./utils/poModal.js";
 import { Slider } from "./utils/slider.js";
 
 const poDiv = document.getElementById('po');
@@ -139,6 +139,7 @@ async function handleActual() {
     poDiv.innerText = poNumber;
     // Rudimentary poNumber check.
     if (isValidPo(poNumber)) {
+        setActivePo(poNumber);
         updatePoCount();
         swapScreens(1);
     }

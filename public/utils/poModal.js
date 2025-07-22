@@ -26,7 +26,6 @@ export async function getPoNumber() {
             if (e.key === 'Enter') {
                 input.removeEventListener('keypress', handler);
                 resolve(this.value);
-                setActivePo(`po${this.value}`);
                 toggleVisibility(false);
                 this.value = '';
             }
@@ -47,7 +46,7 @@ async function getActivePo() {
     const data = await (await fetch('/api/getActivePo')).json();
     return data.activePo;
 }
-async function setActivePo(po) {
+export async function setActivePo(po) {
     await fetch('/api/setActivePo', {
         method: 'POST',
         headers: {
