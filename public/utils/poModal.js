@@ -1,14 +1,34 @@
 const div = document.createElement('div');
-const input = document.createElement('input');
+const poInput = document.createElement('input');
 const label = document.createElement('label');
+const cancel = document.createElement('button');
+const confirm = document.createElement('button');
+const buttonHolder = document.createElement('div');
 
 export function createModal() {
     div.id = 'po-modal';
-    input.id = 'po-input';
+    poInput.id = 'po-input';
+    label.id = 'po-label';
+    buttonHolder.id = 'po-buttons';
+    label.innerText = 'Ingresa Numero de PO:\n(8 digitos)';
 
-    label.innerText = 'Enter PO Number:';
-    label.appendChild(input);
+    cancel.innerText = 'Cancelar';
+    confirm.innerText = 'Confirmar';
+
+    poInput.maxLength = 8;
+
+    poInput.addEventListener('input', function () {
+        this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    cancel.addEventListener('click', () => {
+        toggleVisibility(false);
+    });
+    label.appendChild(poInput);
+    buttonHolder.appendChild(cancel);
+    buttonHolder.appendChild(confirm);
     div.appendChild(label);
+    div.appendChild(buttonHolder);
     document.body.appendChild(div);
 }
 
@@ -21,16 +41,23 @@ export async function getPoNumber() {
     }
     // Happens if there is no active PO or the user doesn't want to use the active PO.
     toggleVisibility(true);
+    // Waits for the user to press enter or click confirm before proceeding with the PO.
     return await new Promise(resolve => {
-        input.focus();
-        input.addEventListener('keypress', function handler(e) {
+        poInput.focus();
+        confirm.addEventListener('click', finishPromise);
+        poInput.addEventListener('keypress', handleKeyPress);
+        function handleKeyPress(e) {
             if (e.key === 'Enter') {
-                input.removeEventListener('keypress', handler);
-                resolve(this.value);
-                toggleVisibility(false);
-                this.value = '';
+                finishPromise();
             }
-        });
+        }
+        function finishPromise() {
+            confirm.removeEventListener('click', finishPromise);
+            poInput.removeEventListener('keypress', handleKeyPress);
+            resolve(poInput.value);
+            toggleVisibility(false);
+            poInput.value = '';
+        }
     });
 }
 function toggleVisibility(visibility) {
@@ -48,7 +75,7 @@ async function getActivePo() {
     return data.activePo;
 }
 export async function setActivePo(po) {
-    const {isValid, err} = await (await fetch('/api/setActivePo', {
+    const { isValid, err } = await (await fetch('/api/setActivePo', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

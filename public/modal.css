@@ -1,16 +1,50 @@
 #po-modal {
   position: fixed;
-  display: flex;
+  display: grid;
+  grid-template-rows: 2fr 1fr;
   align-items: center;
   text-align: center;
+  justify-items: center;
   border-radius: 20px;
   border: 3px solid black;
   transition: all 0.5s cubic-bezier(0.23, 1, 0.320, 1);
   top: 100%;
   left: 50%;
   transform: translate(-50%, 0);
-  height: 50vh;
+  height: 70vh;
   width: 50vw;
   background-color: rgb(210, 210, 210);
   z-index: 100;
+}
+
+#po-buttons {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  height: 50%;
+  width: 80%;
+  gap: 10%;
+  grid-template-columns: 1fr 1fr;
+}
+#po-buttons button {
+  height: 100%;
+  width: 100%;
+  border-radius: 20px;
+  padding: 10px;
+  border: 0;
+}
+
+#po-buttons button:nth-child(1) {
+  background-color: rgba(255, 77, 77, 1);
+}
+#po-buttons button:nth-child(2) {
+  background-color: rgba(63, 255, 104, 1);
+}
+#po-buttons button:hover {
+  filter: brightness(0.8);
+}
+
+#po-input {
+  margin-top: 20px;
+  border-radius: 20px;
 }

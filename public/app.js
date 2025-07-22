@@ -147,6 +147,8 @@ async function handleActual() {
             internalSerialInput.focus();
             setTabbable('screen-1');
         }
+    } else {
+        window.alert('Invalid PO!');
     }
 }
 /**
