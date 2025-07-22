@@ -139,9 +139,10 @@ async function handleActual() {
     poDiv.innerText = poNumber;
     // Rudimentary poNumber check.
     if (isValidPo(poNumber)) {
-        setActivePo(poNumber);
-        updatePoCount();
-        swapScreens(1);
+        if (await setActivePo(poNumber)) {
+            updatePoCount();
+            swapScreens(1);
+        }
     }
 }
 /**
@@ -191,7 +192,7 @@ async function handleCloseOrder() {
  * user inputs are valid, then continues to the 2nd screen.
  */
 async function handleContinue() {
-    if (await isValidFirstScreen() || window.confirm('Are you Diego?')) {
+    if (await isValidFirstScreen() || window.confirm('Skip?')) {
         currentRegistration.po = poDiv.innerText;
         currentRegistration.internalId = internalIdInput.value;
         currentRegistration.serialNumber = internalSerialInput.value;

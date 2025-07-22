@@ -47,7 +47,7 @@ async function getActivePo() {
     return data.activePo;
 }
 export async function setActivePo(po) {
-    await fetch('/api/setActivePo', {
+    const {isValid, err} = await (await fetch('/api/setActivePo', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -55,5 +55,9 @@ export async function setActivePo(po) {
         body: JSON.stringify({
             po
         })
-    });
+    })).json();
+    if (!isValid) {
+        window.alert(err);
+    }
+    return isValid;
 }

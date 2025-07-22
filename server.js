@@ -69,12 +69,12 @@ app.post('/api/firstSend', async (req, res) => {
 
         const [[qc2]] = await pool.query(sqlStringQc2, [req.body.internalId]);
         if (qc2) {
-            res.json({ isValidFirstSend: true, qc2});
+            res.json({ isValidFirstSend: true, qc2 });
         } else {
             res.json({ isValidFirstSend: false, err: 'No Rows Found!' });
         }
     } else {
-        res.json({ isValidFirstSend: false, err: 'Not a unique registration!'});
+        res.json({ isValidFirstSend: false, err: 'Not a unique registration!' });
     }
 });
 
@@ -148,5 +148,11 @@ app.get('/api/closeOrder', async (req, res) => {
 });
 
 app.post('/api/setActivePo', async (req, res) => {
-    await pool.query('UPDATE po_list SET po_order = ? WHERE id = 1', [req.body.po]);
+    try {
+        // If this insert fails, it's because there is already a closed PO with that number.
+        await pool.query('UPDATE po_list SET po_order = ? WHERE id = 1', [req.body.po]);
+        res.json({ isValid: true });
+    } catch (err) {
+        res.json({ isValid: false, err: 'PO Order Already Closed!' });
+    }
 });
