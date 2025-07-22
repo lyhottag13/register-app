@@ -58,8 +58,8 @@ async function main() {
         } else if (event.key === '.') {
             // If I press . then fill out the second screen.
             twoCupInput.value = '80';
-            oneCupInput.value = '15';
-            timeInput.value = '43';
+            oneCupInput.value = '43';
+            timeInput.value = '15';
         }
     })
     // Automatically builds the datecode, formatted with the last two year digits and the week number: YYWW.
@@ -103,10 +103,10 @@ function setInputValidations() {
         setColorBasedOnRange(this, 75, 105);
     });
     oneCupInput.addEventListener('input', function () {
-        setColorBasedOnRange(this, 11, 21);
+        setColorBasedOnRange(this, 36, 56);
     });
     timeInput.addEventListener('input', function () {
-        setColorBasedOnRange(this, 36, 56);
+        setColorBasedOnRange(this, 11, 21);
     });
     function handleSerialNumbers() {
         setColorBasedOnLength(this, 17);
@@ -122,7 +122,7 @@ function setInputValidations() {
         }
     }
     function setColorBasedOnRange(object, min, max) {
-        if (object.value <= min || object.value >= max) {
+        if (object.value < min || object.value > max) {
             object.style.backgroundColor = 'rgba(255, 77, 77, 1)';
         } else {
             object.style.backgroundColor = 'rgba(63, 255, 104, 1)';
@@ -182,6 +182,7 @@ async function handleBack() {
 async function handleCloseOrder() {
     fetch('/api/closeOrder');
     closeOrderButton.disabled = true;
+    swapScreens(0);
 }
 
 /**
