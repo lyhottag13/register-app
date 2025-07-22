@@ -296,10 +296,10 @@ async function isValidSecondScreen() {
     if (twoCupInput.value < 75 || twoCupInput.value > 105) {
         return false;
     }
-    if (timeInput.value < 36 || timeInput.value > 56) {
+    if (timeInput.value < 11 || timeInput.value > 21) {
         return false;
     }
-    if (oneCupInput.value < 11 || oneCupInput.value > 21) {
+    if (oneCupInput.value < 36 || oneCupInput.value > 56) {
         return false;
     }
     if (!otherTestCheckBox.value) {
