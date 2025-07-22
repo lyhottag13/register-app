@@ -144,6 +144,7 @@ async function handleActual() {
             // Delays the focus because the scroll malfunctions otherwise.
             await swapScreens(1);
             internalSerialInput.focus();
+            setTabbable('screen-1');
         }
     }
 }
@@ -185,6 +186,7 @@ async function updatePoCount() {
  */
 async function handleBack() {
     await swapScreens(--currentScreen);
+    setTabbable(`screen-${currentScreen}`);
     if (currentScreen === 1) {
         internalSerialInput.focus();
     }
@@ -198,6 +200,7 @@ async function handleCloseOrder() {
     closeOrderButton.disabled = true;
     swapScreens(0);
     document.body.focus();
+    setTabbable('screen-0');
 }
 
 /**
@@ -213,6 +216,7 @@ async function handleContinue() {
         console.log('Successful First Screen!');
         await swapScreens(2);
         twoCupInput.focus();
+        setTabbable('screen-2');
     } else {
         console.log('Failed First Screen!');
     }
@@ -236,9 +240,10 @@ async function handleSubmit() {
         currentRegistration.notes = notesInput.value;
         if (await sendRegistration(currentRegistration)) {
             console.log('Successful Submit!');
-            swapScreens(1);
             reset();
-            setTimeout(updatePoCount, 1000);
+            await swapScreens(1);
+            // This update can't be instant since the database call needs time to go through.
+            updatePoCount(); 
         } else {
             console.log('Send Failure!');
         }
@@ -393,11 +398,21 @@ function reset() {
     oneCupInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
     timeInput.value = '';
     timeInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
-    window.scroll(0, 0);
+    window.scroll(0, 0); // If the user presses tab too much, the viewport malfunctions.
     otherTestCheckBox.setValue(false);
     reworkCheckBox.setValue(false);
     notesInput.value = '';
+    setTabbable('screen-0');
 }
 
+function setTabbable(parentId) {
+    document.querySelectorAll('*').forEach(element => {
+        element.tabIndex = -1;
+    });
+    const parent = document.getElementById(parentId);
+    parent.querySelectorAll('input, button, textarea').forEach(element => {
+        element.tabIndex = 0;
+    });
+}
 // Runs the main function after everything else in the root of the js file has run.
 main();
