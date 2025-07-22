@@ -157,6 +157,7 @@ function isValidPo(poNumber) {
 }
 
 async function updatePoCount() {
+    closeOrderButton.disabled = true;
     const poCount = await (await fetch('/api/poCount', {
         method: "POST",
         headers: {
@@ -169,9 +170,9 @@ async function updatePoCount() {
     poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
     poCountTodayDiv.innerText = `Today:\n${poCount.poCountToday}`;
     // Allows the user to close the order when poCount is over 1150, since the program needs to know when to begin a new order.
-    // if (poCount.poCountTotal >= 1150 || window.confirm('Override?')) {
-    //     closeOrderButton.disabled = false;
-    // }
+    if (poCount.poCountTotal >= 1150 || window.confirm('Override?')) {
+        closeOrderButton.disabled = false;
+    }
 }
 
 async function handleBack() {
@@ -179,8 +180,7 @@ async function handleBack() {
 }
 
 async function handleCloseOrder() {
-    // TODO Implement please.
-    console.log('Nothing, needs to be implemented.');
+    fetch('/api/closeOrder');
     closeOrderButton.disabled = true;
 }
 

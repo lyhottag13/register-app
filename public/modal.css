@@ -1,0 +1,16 @@
+#po-modal {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  border-radius: 20px;
+  border: 3px solid black;
+  transition: all 0.5s cubic-bezier(0.23, 1, 0.320, 1);
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  height: 50vh;
+  width: 50vw;
+  background-color: rgb(210, 210, 210);
+  z-index: 100;
+}

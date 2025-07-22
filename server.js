@@ -121,3 +121,27 @@ app.post('/api/registration', async (req, res) => {
     res.json({ isSuccessfulSubmit: true });
 });
 
+app.get('/api/getActivePo', async (req, res) => {
+    // The first id of the po_list is the active PO.
+    const [[activePo]] = await pool.query('SELECT po_order as activePo FROM po_list WHERE id = 1');
+    res.json(activePo);
+});
+
+app.get('/api/closeOrder', async (req, res) => {
+    const [[{ po_order: oldPo }]] = await pool.query(`
+        SELECT po_order FROM po_list WHERE id = 1;
+    `);
+    const [[{ numberOfRegistrations }]] = await pool.query(`
+        SELECT COUNT(CASE WHEN po_order LIKE ? THEN 1 END) as numberOfRegistrations FROM test_tracker
+    `, [oldPo]);
+    await pool.query(`
+        UPDATE po_list SET po_order = NULL WHERE id = 1;
+    `);
+    await pool.query(`
+        INSERT INTO po_list (po_order, registrations) VALUES (?, ?)
+    `, [oldPo, numberOfRegistrations]);
+});
+
+app.post('/api/setActivePo', async (req, res) => {
+    await pool.query('UPDATE po_list SET po_order = ? WHERE id = 1', [req.body.po]);
+});
