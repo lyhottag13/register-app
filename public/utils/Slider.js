@@ -1,6 +1,6 @@
-// I made a custom slider class for two separate occasions.
+// I made a custom slider class for the second user input screen.
 
-export class Slider {
+export default class Slider {
     constructor(parent, value) {
         this.parent = parent;
         this.value = value;

@@ -1,6 +1,6 @@
 import getISOWeek from "./utils/getISOWeek.js";
 import { getPoNumber, createModal, setActivePo } from "./utils/poModal.js";
-import { Slider } from "./utils/slider.js";
+import Slider from "./utils/slider.js";
 
 const poDiv = document.getElementById('po');
 const actualButton = document.getElementById('actual');
@@ -23,6 +23,7 @@ const otherTestCheckBox = new Slider(document.getElementById('other-tests'), fal
 const reworkCheckBox = new Slider(document.getElementById('rework'), false);
 const notesInput = document.getElementById('notes');
 
+// Static elements.
 const staticElementsTop = document.getElementById('static-elements-top');
 const datecode = document.getElementById('datecode');
 const poCountTotalDiv = document.getElementById('po-count');
@@ -33,7 +34,7 @@ const dateTime = document.getElementById('date-time');
 // The current registration represented as an object to hold any number of properties.
 const currentRegistration = {};
 
-let currentScreen = 0; // Tracks the current screen, used in the back button.
+let currentScreen = 0; // Tracks the current screen, useful for the back button.
 
 async function main() {
     createModal(); // Creates the PO number modal for later use.
@@ -404,15 +405,28 @@ function reset() {
     notesInput.value = '';
     setTabbable('screen-0');
 }
-
+/**
+ * Sets the HTML elements within a parent element to be tabbable through their
+ * tab-index attribute. 
+ * First sets everything to be untabbable, then sets only the parent's 
+ * children to be tabbable.
+ * Prevents a bug where the user can tab out of the viewport's area and
+ * into a new screen, where they're not supposed to be.
+ * @param {string} parentId The ID of the parent element.
+ */
 function setTabbable(parentId) {
-    document.querySelectorAll('*').forEach(element => {
+    // Sets everything to be untabbable.
+    const allElements = document.querySelectorAll('*');
+    allElements.forEach(element => {
         element.tabIndex = -1;
     });
+    // Sets only the desired elements to be tabbable.
     const parent = document.getElementById(parentId);
-    parent.querySelectorAll('input, button, textarea').forEach(element => {
+    const tabbableElements = parent.querySelectorAll('input, button, textarea');
+    tabbableElements.forEach(element => {
         element.tabIndex = 0;
     });
 }
-// Runs the main function after everything else in the root of the js file has run.
+
+// Runs the main function after everything else in the top-level of the js file has run.
 main();
