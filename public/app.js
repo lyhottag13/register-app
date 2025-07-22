@@ -225,10 +225,10 @@ async function handleSubmit() {
             reset();
             setTimeout(updatePoCount, 1000);
         } else {
-            console.log('Submit Failure!');
+            console.log('Send Failure!');
         }
     } else {
-        console.log('Failure 2!');
+        console.log('Second Screen Failure!');
     }
 }
 
@@ -238,30 +238,30 @@ async function handleSubmit() {
  */
 async function isValidFirstScreen() {
     if (internalIdInput.value.length !== 6) {
-        console.log('Internal ID Invalid!');
+        window.alert('Internal ID Invalid!');
         return false;
     }
     if (internalSerialInput.value !== externalSerial1Input.value || internalSerialInput.value !== externalSerial2Input.value) {
-        console.log('Serial Input Equality Invalid!');
+        window.alert('Serial Input Equality Invalid!');
         return false;
     }
     // Checks only one input's length since their equality is already established.
     if (internalSerialInput.value.length !== 17) {
-        console.log('Serial Input Length Invalid!');
+        window.alert('Serial Input Length Invalid!');
         return false;
     }
     const serialNumberDatecode = internalSerialInput.value.slice(8, 12);
     if (serialNumberDatecode !== datecode.innerText.slice(10)) {
-        console.log('Datecode Invalid!');
+        window.alert('Datecode Invalid!');
         return false;
     }
     const data = await sendPotentialFirstScreen();
     if (data.qc2) {
         currentRegistration.qc2 = data.qc2;
     } else if (data.err) {
-        console.log(data.err);
+        window.alert(data.err);
     } else {
-        console.log('Something went wrong!');
+        window.alert('Something went wrong!');
     }
     return data.isValidFirstSend;
 }
@@ -294,15 +294,19 @@ async function sendPotentialFirstScreen() {
  */
 async function isValidSecondScreen() {
     if (twoCupInput.value < 75 || twoCupInput.value > 105) {
+        window.alert('Two Cup Value Invalid!');
         return false;
     }
     if (timeInput.value < 11 || timeInput.value > 21) {
+        window.alert('Time Value Invalid!');
         return false;
     }
     if (oneCupInput.value < 36 || oneCupInput.value > 56) {
+        window.alert('One Cup Value Invalid!');
         return false;
     }
     if (!otherTestCheckBox.value) {
+        window.alert('Other Tests Invalid!');
         return false;
     }
     return true;
