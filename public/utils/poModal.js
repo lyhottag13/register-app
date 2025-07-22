@@ -22,6 +22,7 @@ export async function getPoNumber() {
     // Happens if there is no active PO or the user doesn't want to use the active PO.
     toggleVisibility(true);
     return await new Promise(resolve => {
+        input.focus();
         input.addEventListener('keypress', function handler(e) {
             if (e.key === 'Enter') {
                 input.removeEventListener('keypress', handler);

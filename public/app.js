@@ -141,7 +141,9 @@ async function handleActual() {
     if (isValidPo(poNumber)) {
         if (await setActivePo(poNumber)) {
             updatePoCount();
-            swapScreens(1);
+            // Delays the focus because the scroll malfunctions otherwise.
+            await swapScreens(1);
+            internalSerialInput.focus();
         }
     }
 }
@@ -177,14 +179,25 @@ async function updatePoCount() {
     }
 }
 
+/**
+ * Handles the Back button. Returns the user to previous screen. Also refocuses
+ * the user input if the screen is now the 1st.
+ */
 async function handleBack() {
-    swapScreens(--currentScreen);
+    await swapScreens(--currentScreen);
+    if (currentScreen === 1) {
+        internalSerialInput.focus();
+    }
 }
-
+/**
+ * Handles the closeOrderButton. Sends out an API call to close the order,
+ * which the server follows through on.
+ */
 async function handleCloseOrder() {
     fetch('/api/closeOrder');
     closeOrderButton.disabled = true;
     swapScreens(0);
+    document.body.focus();
 }
 
 /**
@@ -198,9 +211,10 @@ async function handleContinue() {
         currentRegistration.serialNumber = internalSerialInput.value;
         currentRegistration.datecode = datecode.innerText;
         console.log('Successful First Screen!');
-        swapScreens(2);
+        await swapScreens(2);
+        twoCupInput.focus();
     } else {
-        console.log('Failure 1!');
+        console.log('Failed First Screen!');
     }
 }
 
@@ -342,8 +356,9 @@ async function sendRegistration() {
  * @param {number} index The index of the desired screen.
  */
 async function swapScreens(index) {
+    const movingScreen = document.getElementById('moving-screen');
     currentScreen = index;
-    document.getElementById('moving-screen').style.transform = `translateX(-${index * 100}vw)`;
+    movingScreen.style.transform = `translateX(-${index * 100}vw)`;
     // Moves the staticElements at the top/bottom of the screen out of/into view since they're only used on the index 1 and 2 screens.
     if (index > 0) {
         staticElementsTop.style.transform = 'translateY(0)';
@@ -352,6 +367,12 @@ async function swapScreens(index) {
         staticElementsTop.style.transform = 'translateY(-100%)';
         staticElementsBottom.style.transform = 'translateY(100vh)'
     }
+    await new Promise(resolve => {
+        movingScreen.addEventListener('transitionend', function handler(e) {
+            movingScreen.removeEventListener('transitionend', handler);
+            resolve(true);
+        });
+    });
 }
 
 /**
@@ -372,6 +393,7 @@ function reset() {
     oneCupInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
     timeInput.value = '';
     timeInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+    window.scroll(0, 0);
     otherTestCheckBox.setValue(false);
     reworkCheckBox.setValue(false);
     notesInput.value = '';
