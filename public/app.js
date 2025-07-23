@@ -34,7 +34,7 @@ const dateTime = document.getElementById('date-time');
 // The current registration represented as an object to hold any number of properties.
 const currentRegistration = {};
 
-let currentScreen = 0; // Tracks the current screen, useful for the back button.
+let currentScreenIndex = 0; // Tracks the current screen, useful for the back button.
 
 async function main() {
     createModal(); // Creates the PO number modal for later use.
@@ -180,9 +180,9 @@ async function updatePoCount() {
  * the user input if the screen is now the 1st.
  */
 async function handleBack() {
-    await swapScreens(--currentScreen);
-    setTabbable(`screen-${currentScreen}`);
-    if (currentScreen === 1) {
+    await swapScreens(currentScreenIndex - 1);
+    setTabbable(`screen-${currentScreenIndex}`);
+    if (currentScreenIndex === 1) {
         internalSerialInput.focus();
     }
 }
@@ -239,8 +239,8 @@ async function handleSubmit() {
             console.log('Successful Submit!');
             reset();
             await swapScreens(1);
-	    setTabbable('screen-1');
-	    internalSerialInput.focus();
+            setTabbable('screen-1');
+            internalSerialInput.focus();
             // This update can't be instant since the database submit needs time to go through.
             updatePoCount();
         } else {
@@ -364,26 +364,54 @@ async function sendRegistration() {
 /**
  * Swaps between the main screens. Index 0 is the two-button actual/special screen,
  * 1 is the first user input screen, and 2 is the second user input screen.
- * @param {number} index The index of the desired screen.
+ * @param {number} nextScreenIndex The index of the desired screen.
  */
-async function swapScreens(index) {
+async function swapScreens(nextScreenIndex) {
     const movingScreen = document.getElementById('moving-screen');
-    currentScreen = index;
-    movingScreen.style.transform = `translateX(-${index * 100}vw)`;
+    console.log(currentScreenIndex);
+    console.log(nextScreenIndex);
+    // Removes the Enter key event listeners from the previous screen's buttons.
+    if (currentScreenIndex === 1) {
+        document.removeEventListener('keypress', handleContinueKeyPress);
+    } else if (currentScreenIndex === 2) {
+        console.log('cooL!');
+        document.removeEventListener('keypress', handleSubmitKeyPress);
+    }
+
+    // Adds the Enter key listeners to the next screen's buttons.
+    if (nextScreenIndex === 1) {
+        document.addEventListener('keypress', handleContinueKeyPress);
+    } else if (nextScreenIndex === 2) {
+        document.addEventListener('keypress', handleSubmitKeyPress)
+    }
+
+    currentScreenIndex = nextScreenIndex;
+    movingScreen.style.transform = `translateX(-${nextScreenIndex * 100}vw)`;
     // Moves the staticElements at the top/bottom of the screen out of/into view since they're only used on the index 1 and 2 screens.
-    if (index > 0) {
+    if (nextScreenIndex > 0) {
         staticElementsTop.style.transform = 'translateY(0)';
         staticElementsBottom.style.transform = 'translateY(100vh) translateY(-100%)';
     } else {
         staticElementsTop.style.transform = 'translateY(-100%)';
         staticElementsBottom.style.transform = 'translateY(100vh)'
     }
+    // Returns when the screen has finished transitioning, useful for .focus() updates.
     await new Promise(resolve => {
         movingScreen.addEventListener('transitionend', function handler(e) {
             movingScreen.removeEventListener('transitionend', handler);
             resolve(true);
         });
     });
+}
+function handleSubmitKeyPress(e) {
+    if (e.key === 'Enter') {
+        handleSubmit();
+    }
+}
+function handleContinueKeyPress(e) {
+    if (e.key === 'Enter') {
+        handleContinue();
+    }
 }
 
 /**
