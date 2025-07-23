@@ -186,8 +186,8 @@ async function updatePoCount() {
     })).json();
     poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
     poCountTodayDiv.innerText = `Hoy:\n${poCount.poCountToday}`;
-    // Allows the user to close the order when poCount is over 1150, since the program needs to know when to begin a new order.
-    if (poCount.poCountTotal >= 1150 || true) {
+    // Allows the user to close the order when poCount is over 1115, since the program needs to know when to begin a new order.
+    if (poCount.poCountTotal >= 1115) {
         closeOrderButton.disabled = false;
     }
 }
@@ -222,7 +222,7 @@ async function handleCloseOrder() {
  * user inputs are valid, then continues to the 2nd screen.
  */
 async function handleContinue() {
-    if (await isValidFirstScreen() || window.confirm('Skip?')) {
+    if (await isValidFirstScreen()) {
         currentRegistration.po = poDiv.innerText;
         currentRegistration.internalId = internalIdInput.value;
         currentRegistration.serialNumber = internalSerialInput.value;
