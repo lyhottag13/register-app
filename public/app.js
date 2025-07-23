@@ -46,23 +46,6 @@ async function main() {
         window.alert('Conexion fallada');
         return;
     }
-    // For testing, fills out the first screen with sample values.
-    document.addEventListener('keydown', event => {
-        // If I press , then fill out the first screen.
-        if (event.key === ',') {
-            poDiv.value = '30341278';
-            internalIdInput.value = `0000${window.prompt('ID:')}`;
-            const serial = window.prompt('SERIAL:');
-            internalSerialInput.value = `APBUAESA2530000${serial}`;
-            externalSerial1Input.value = `APBUAESA2530000${serial}`;
-            externalSerial2Input.value = `APBUAESA2530000${serial}`;
-        } else if (event.key === '.') {
-            // If I press . then fill out the second screen.
-            twoCupInput.value = '80';
-            oneCupInput.value = '43';
-            timeInput.value = '15';
-        }
-    })
     // Automatically builds the datecode, formatted with the last two year digits and the week number: YYWW.
     datecode.innerText = `Datecode:\n${new Date().toISOString().slice(2, 4) + getISOWeek()}`;
 
@@ -256,6 +239,8 @@ async function handleSubmit() {
             console.log('Successful Submit!');
             reset();
             await swapScreens(1);
+	    setTabbable('screen-1');
+	    internalSerialInput.focus();
             // This update can't be instant since the database submit needs time to go through.
             updatePoCount();
         } else {
