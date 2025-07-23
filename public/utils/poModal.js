@@ -34,6 +34,11 @@ export async function getPoNumber() {
             return activePo.slice(2); // Slices since the PO starts with po.
         }
     }
+    const userInputPassword = window.prompt('Ingresa contraseña');
+    if (!(await sendPassword(userInputPassword))) {
+        window.alert('Contraseña incorrecta');
+        return 'CANCEL';
+    }
     // Happens if there is no active PO or the user doesn't want to use the active PO.
     toggleVisibility(true);
     // Waits for the user to press enter or click confirm before proceeding with the PO.
@@ -60,6 +65,19 @@ export async function getPoNumber() {
             poInput.value = '';
         }
     });
+}
+
+async function sendPassword(password) {
+    const { success } = await (await fetch('/api/password', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            password
+        })
+    })).json();
+    return success;
 }
 function toggleVisibility(visibility) {
     if (visibility) {

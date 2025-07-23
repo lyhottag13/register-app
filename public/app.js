@@ -39,11 +39,11 @@ let currentScreen = 0; // Tracks the current screen, useful for the back button.
 async function main() {
     createModal(); // Creates the PO number modal for later use.
     // Checks for a successful connection to the database before continuing.
-    const { connectionSuccessful } = await (await fetch('http://localhost:3000/api/testConnection')).json();
+    const { connectionSuccessful } = await (await fetch('/api/testConnection')).json();
     if (connectionSuccessful) {
-        window.alert('Successful Connection!');
+        window.alert('Conexion exitosa');
     } else {
-        window.alert('Connection Failed!');
+        window.alert('Conexion fallada');
         return;
     }
     // For testing, fills out the first screen with sample values.
@@ -257,7 +257,7 @@ async function handleSubmit() {
             reset();
             await swapScreens(1);
             // This update can't be instant since the database submit needs time to go through.
-            updatePoCount(); 
+            updatePoCount();
         } else {
             console.log('Send Failure!');
         }
@@ -271,26 +271,27 @@ async function handleSubmit() {
  * @returns Whether or not the first screen's inputs are valid.
  */
 async function isValidFirstScreen() {
+    let firstScreenErr = '';
     if (internalIdInput.value.length !== 6) {
-        window.alert('Internal ID Invalid!');
-        return false;
+        firstScreenErr += 'ID interna inválida\n';
     }
     if (internalSerialInput.value !== externalSerial1Input.value || internalSerialInput.value !== externalSerial2Input.value) {
-        window.alert('Serial Inputs Not Equal!');
-        return false;
+        firstScreenErr += 'Números de serie no coinciden\n';
     }
     // Checks only one input's length since their equality is already established.
     if (internalSerialInput.value.length !== 17) {
-        window.alert('Serial Input Length Invalid!');
-        return false;
+        firstScreenErr += 'Longitud del número de serie inválida\n';
     }
     // Slices the serial number since in APBUAESAXXXXAAAAA, the datecode is XXXX.
     const serialNumberDatecode = internalSerialInput.value.slice(8, 12);
     if (serialNumberDatecode !== datecode.innerText.slice(10)) {
-        window.alert('Datecode Invalid!');
+        firstScreenErr += 'Datecode inválido\n';
+    }
+    if (firstScreenErr.length > 0) {
+        window.alert(firstScreenErr);
         return false;
     }
-    const {isValidFirstSend, qc2, err} = await sendPotentialFirstScreen();
+    const { isValidFirstSend, qc2, err } = await sendPotentialFirstScreen();
     if (qc2) {
         currentRegistration.qc2 = qc2;
     } else if (err) {
@@ -329,22 +330,26 @@ async function sendPotentialFirstScreen() {
  * the operator that all the tests are PASSes.
  */
 async function isValidSecondScreen() {
+    let errorMessage = '';
+
     if (twoCupInput.value < 75 || twoCupInput.value > 105) {
-        window.alert('Two Cup Value Invalid!');
-        return false;
+        errorMessage += 'Valor de QC3 2 Cup inválido\n';
     }
     if (timeInput.value < 11 || timeInput.value > 21) {
-        window.alert('Time Value Invalid!');
-        return false;
+        errorMessage += 'Valor de QC3 Tiempo inválido\n';
     }
     if (oneCupInput.value < 36 || oneCupInput.value > 56) {
-        window.alert('One Cup Value Invalid!');
-        return false;
+        errorMessage += 'Valor de QC3 1 Cup inválido\n';
     }
     if (!otherTestCheckBox.value) {
-        window.alert('Other Tests Invalid!');
+        errorMessage += 'Otras pruebas inválidas\n';
+    }
+
+    if (errorMessage.length > 0) {
+        window.alert(errorMessage);
         return false;
     }
+
     return true;
 }
 

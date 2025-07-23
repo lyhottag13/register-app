@@ -83,7 +83,7 @@ app.post('/api/firstSend', async (req, res) => {
         if (qc2) {
             res.json({ isValidFirstSend: true, qc2 });
         } else {
-            res.json({ isValidFirstSend: false, err: 'No Rows Found!' });
+            res.json({ isValidFirstSend: false, err: 'No hay registros de QC2' });
         }
     } else {
         // Creates verbose error message.
@@ -174,6 +174,14 @@ app.post('/api/setActivePo', async (req, res) => {
         await pool.query('UPDATE po_list SET po_order = ? WHERE id = 1', [req.body.po]);
         res.json({ isValid: true });
     } catch (err) {
-        res.json({ isValid: false, err: 'PO Order Already Closed!' });
+        res.json({ isValid: false, err: 'Orden de compra ya cerrada' });
+    }
+});
+
+app.post('/api/password', (req, res) => {
+    if (req.body.password === 'register!2025') {
+        res.json({ success: true });
+    } else {
+        res.json({ success: false });
     }
 });
