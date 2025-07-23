@@ -95,6 +95,11 @@ async function main() {
     reset();
 }
 
+/**
+ * Sets the input validations for each of the inputs. Each validation causes the
+ * background color of the inputs to change. The validations are all based on
+ * length.
+ */
 function setInputValidations() {
     internalSerialInput.addEventListener('input', handleSerialNumbers);
     externalSerial1Input.addEventListener('input', handleSerialNumbers);
@@ -178,7 +183,7 @@ async function updatePoCount() {
     poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
     poCountTodayDiv.innerText = `Today:\n${poCount.poCountToday}`;
     // Allows the user to close the order when poCount is over 1150, since the program needs to know when to begin a new order.
-    if (poCount.poCountTotal >= 1150 || window.confirm('Override?')) {
+    if (poCount.poCountTotal >= 1150 || true) {
         closeOrderButton.disabled = false;
     }
 }
@@ -265,7 +270,7 @@ async function isValidFirstScreen() {
         return false;
     }
     if (internalSerialInput.value !== externalSerial1Input.value || internalSerialInput.value !== externalSerial2Input.value) {
-        window.alert('Serial Input Equality Invalid!');
+        window.alert('Serial Inputs Not Equal!');
         return false;
     }
     // Checks only one input's length since their equality is already established.
@@ -273,26 +278,28 @@ async function isValidFirstScreen() {
         window.alert('Serial Input Length Invalid!');
         return false;
     }
+    // Slices the serial number since in APBUAESAXXXXAAAAA, the datecode is XXXX.
     const serialNumberDatecode = internalSerialInput.value.slice(8, 12);
     if (serialNumberDatecode !== datecode.innerText.slice(10)) {
         window.alert('Datecode Invalid!');
         return false;
     }
-    const data = await sendPotentialFirstScreen();
-    if (data.qc2) {
-        currentRegistration.qc2 = data.qc2;
-    } else if (data.err) {
-        window.alert(data.err);
+    const {isValidFirstSend, qc2, err} = await sendPotentialFirstScreen();
+    if (qc2) {
+        currentRegistration.qc2 = qc2;
+    } else if (err) {
+        window.alert(err);
     } else {
+        // Backup error message if there is no QC2 and no error returned either.
         window.alert('Something went wrong!');
     }
-    return data.isValidFirstSend;
+    return isValidFirstSend;
 }
 /**
  * Sends the data from the first screen, after it has been checked by app.js's checks,
  * to the server to see whether the serial number and internal ID already
- * exist in the database.
- * @returns Whether the first screen's information is valid in the database.
+ * exist in the database. After this, it returns the QC2 data if there is any.
+ * @returns An object with isValidFirstSend and either an error or the QC2 data.
  */
 async function sendPotentialFirstScreen() {
     const data = await (await fetch('/api/firstSend', {

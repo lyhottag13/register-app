@@ -55,10 +55,13 @@ app.post('/api/firstSend', async (req, res) => {
         COUNT(CASE WHEN numero_cafetera = ? THEN 1 END) as idCount
     FROM test_tracker`;
 
-    // Double destructuring since the query returns the rows and metadata.
-    const [[rowsCount]] = await pool.query(sqlStringCount, [req.body.serialNumber, req.body.internalId]);
+    // Triple destructuring since the query returns the rows, metadata, and individual properties.
+    const [[{ serialCount, idCount }]] = await pool.query(sqlStringCount, [req.body.serialNumber, req.body.internalId]);
 
-    const isNewRegistration = rowsCount.serialCount === 0 && rowsCount.idCount === 0;
+    const isUniqueSerial = serialCount === 0;
+    const isUniqueId = idCount === 0;
+    const isNewRegistration = isUniqueSerial && isUniqueId;
+
     if (isNewRegistration) {
         // Searches for a corresponding row in qc2 based on the internal ID.
         const sqlStringQc2 = `
@@ -67,14 +70,25 @@ app.post('/api/firstSend', async (req, res) => {
         AND final_status = 'PASS' 
         ORDER BY date DESC`;
 
+        // qc2 is returned as a JSON object.
         const [[qc2]] = await pool.query(sqlStringQc2, [req.body.internalId]);
+
         if (qc2) {
             res.json({ isValidFirstSend: true, qc2 });
         } else {
             res.json({ isValidFirstSend: false, err: 'No Rows Found!' });
         }
     } else {
-        res.json({ isValidFirstSend: false, err: 'Not a unique registration!' });
+        // Creates verbose error message.
+        let err;
+        if (!isUniqueId && !isUniqueSerial) {
+            err = 'ID y número de serie ya registrados';
+        } else if (!isUniqueId) {
+            err = 'ID ya registrada';
+        } else if (!isUniqueSerial) {
+            err = 'Número de serie ya registrado';
+        }
+        res.json({ isValidFirstSend: false, err });
     }
 });
 

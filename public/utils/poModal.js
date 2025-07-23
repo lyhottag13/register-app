@@ -17,9 +17,7 @@ export function createModal() {
 
     poInput.maxLength = 8;
 
-    poInput.addEventListener('input', function () {
-        this.value = this.value.replace(/[^0-9]/g, '');
-    });
+    poInput.className = 'number';
 
     cancel.addEventListener('click', () => {
         toggleVisibility(false);
