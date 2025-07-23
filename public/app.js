@@ -39,13 +39,13 @@ let currentScreen = 0; // Tracks the current screen, useful for the back button.
 async function main() {
     createModal(); // Creates the PO number modal for later use.
     // Checks for a successful connection to the database before continuing.
-    // const { connectionSuccessful } = await (await fetch('/api/testConnection')).json();
-    // if (connectionSuccessful) {
-    //     window.alert('Successful Connection!');
-    // } else {
-    //     window.alert('Connection Failed!');
-    //     return;
-    // }
+    const { connectionSuccessful } = await (await fetch('http://localhost:3000/api/testConnection')).json();
+    if (connectionSuccessful) {
+        window.alert('Successful Connection!');
+    } else {
+        window.alert('Connection Failed!');
+        return;
+    }
     // For testing, fills out the first screen with sample values.
     document.addEventListener('keydown', event => {
         // If I press , then fill out the first screen.
@@ -141,7 +141,11 @@ function setInputValidations() {
  * swaps to the 1st screen.
  */
 async function handleActual() {
-    const poNumber = `po${await getPoNumber()}`;
+    const poNumberIncomplete = await getPoNumber();
+    if (poNumberIncomplete === 'CANCEL') {
+        return;
+    }
+    const poNumber = `po${poNumberIncomplete}`;
     poDiv.innerText = poNumber;
     // Rudimentary poNumber check.
     if (isValidPo(poNumber)) {
@@ -181,7 +185,7 @@ async function updatePoCount() {
         })
     })).json();
     poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
-    poCountTodayDiv.innerText = `Today:\n${poCount.poCountToday}`;
+    poCountTodayDiv.innerText = `Hoy:\n${poCount.poCountToday}`;
     // Allows the user to close the order when poCount is over 1150, since the program needs to know when to begin a new order.
     if (poCount.poCountTotal >= 1150 || true) {
         closeOrderButton.disabled = false;
@@ -204,11 +208,13 @@ async function handleBack() {
  * which the server follows through on.
  */
 async function handleCloseOrder() {
-    fetch('/api/closeOrder');
-    closeOrderButton.disabled = true;
-    swapScreens(0);
-    document.body.focus();
-    setTabbable('screen-0');
+    if (window.confirm('Cerrar orden?')) {
+        fetch('/api/closeOrder');
+        closeOrderButton.disabled = true;
+        swapScreens(0);
+        document.body.focus();
+        setTabbable('screen-0');
+    }
 }
 
 /**
@@ -236,7 +242,7 @@ async function handleContinue() {
  * captures it into currentRegistration, then sends it to the server.
  */
 async function handleSubmit() {
-    if (!window.confirm('Submit?')) {
+    if (!window.confirm('Enviar?')) {
         return;
     }
     if (await isValidSecondScreen()) {
@@ -250,7 +256,7 @@ async function handleSubmit() {
             console.log('Successful Submit!');
             reset();
             await swapScreens(1);
-            // This update can't be instant since the database call needs time to go through.
+            // This update can't be instant since the database submit needs time to go through.
             updatePoCount(); 
         } else {
             console.log('Send Failure!');

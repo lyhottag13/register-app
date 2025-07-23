@@ -19,9 +19,6 @@ export function createModal() {
 
     poInput.className = 'number';
 
-    cancel.addEventListener('click', () => {
-        toggleVisibility(false);
-    });
     label.appendChild(poInput);
     buttonHolder.appendChild(cancel);
     buttonHolder.appendChild(confirm);
@@ -33,7 +30,7 @@ export function createModal() {
 export async function getPoNumber() {
     const activePo = await getActivePo();
     if (activePo) {
-        if (window.confirm(`Use Active PO? (${activePo})`)) {
+        if (window.confirm(`Usar PO activa? (${activePo})`)) {
             return activePo.slice(2); // Slices since the PO starts with po.
         }
     }
@@ -42,6 +39,7 @@ export async function getPoNumber() {
     // Waits for the user to press enter or click confirm before proceeding with the PO.
     return await new Promise(resolve => {
         poInput.focus();
+        cancel.addEventListener('click', finishPromise);
         confirm.addEventListener('click', finishPromise);
         poInput.addEventListener('keypress', handleKeyPress);
         function handleKeyPress(e) {
@@ -49,10 +47,15 @@ export async function getPoNumber() {
                 finishPromise();
             }
         }
-        function finishPromise() {
+        function finishPromise(e) {
+            cancel.removeEventListener('click', finishPromise);
             confirm.removeEventListener('click', finishPromise);
             poInput.removeEventListener('keypress', handleKeyPress);
-            resolve(poInput.value);
+            if (e?.target === cancel) {
+                resolve('CANCEL');
+            } else {
+                resolve(poInput.value);
+            }
             toggleVisibility(false);
             poInput.value = '';
         }

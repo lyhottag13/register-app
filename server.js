@@ -29,9 +29,15 @@ app.get('/', (req, res) => {
 });
 
 // Checks to see if the connection between the app and the server is successful before continuing.
-// app.get('/api/testConnection', async (req, res) => {
-//     res.json({ connectionSuccessful: await testConnection() });
-// });
+let isTesting = false;
+app.get('/api/testConnection', async (req, res) => {
+    if (isTesting) { 
+        return; 
+    }
+    isTesting = true;
+    res.json({ connectionSuccessful: await testConnection() });
+    isTesting = false;
+});
 
 app.post('/api/poCount', async (req, res) => {
     // Reusable SQL query for the PO counts at the top of the screen.
@@ -51,17 +57,18 @@ app.post('/api/firstSend', async (req, res) => {
     // SQL query to return whether or not the internal ID or serial number already exist in test_tracker.
     const sqlStringCount = `
     SELECT
-        COUNT(CASE WHEN serial_number LIKE ? THEN 1 END) as serialCount,
-        COUNT(CASE WHEN numero_cafetera = ? THEN 1 END) as idCount
+        SUM(serial_number LIKE ?) as serialCount,
+        SUM(numero_cafetera = ?) as idCount
     FROM test_tracker`;
 
     // Triple destructuring since the query returns the rows, metadata, and individual properties.
     const [[{ serialCount, idCount }]] = await pool.query(sqlStringCount, [req.body.serialNumber, req.body.internalId]);
+    
+    // Double equals are needed since the numbers are returned as strings.
+    const isUniqueSerial = serialCount == 0;
+    const isUniqueId = idCount == 0;
 
-    const isUniqueSerial = serialCount === 0;
-    const isUniqueId = idCount === 0;
     const isNewRegistration = isUniqueSerial && isUniqueId;
-
     if (isNewRegistration) {
         // Searches for a corresponding row in qc2 based on the internal ID.
         const sqlStringQc2 = `
