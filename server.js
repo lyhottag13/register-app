@@ -57,7 +57,7 @@ app.post('/api/firstSend', async (req, res) => {
     // SQL query to return whether or not the internal ID or serial number already exist in test_tracker.
     const sqlStringCount = `
     SELECT
-        SUM(serial_number LIKE ?) as serialCount,
+        SUM(LOWER(serial_number) LIKE LOWER(?)) as serialCount,
         SUM(numero_cafetera = ?) as idCount
     FROM test_tracker`;
 

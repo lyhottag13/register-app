@@ -374,7 +374,6 @@ async function swapScreens(nextScreenIndex) {
     if (currentScreenIndex === 1) {
         document.removeEventListener('keypress', handleContinueKeyPress);
     } else if (currentScreenIndex === 2) {
-        console.log('cooL!');
         document.removeEventListener('keypress', handleSubmitKeyPress);
     }
 
@@ -405,11 +404,13 @@ async function swapScreens(nextScreenIndex) {
 }
 function handleSubmitKeyPress(e) {
     if (e.key === 'Enter') {
+        e.preventDefault();
         handleSubmit();
     }
 }
 function handleContinueKeyPress(e) {
     if (e.key === 'Enter') {
+        e.preventDefault();
         handleContinue();
     }
 }
