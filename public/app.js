@@ -281,6 +281,7 @@ async function isValidFirstScreen() {
         currentRegistration.qc2 = qc2;
     } else if (err) {
         window.alert(err);
+        handleQc2Insert();
     } else {
         // Backup error message if there is no QC2 and no error returned either.
         window.alert('Something went wrong!');

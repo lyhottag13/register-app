@@ -55,20 +55,7 @@ app.post('/api/poCount', async (req, res) => {
  */
 app.post('/api/firstSend', async (req, res) => {
     // SQL query to return whether or not the internal ID or serial number already exist in test_tracker.
-    const sqlStringCount = `
-    SELECT
-        SUM(LOWER(serial_number) LIKE LOWER(?)) as serialCount,
-        SUM(numero_cafetera = ?) as idCount
-    FROM test_tracker`;
-
-    // Triple destructuring since the query returns the rows, metadata, and individual properties.
-    const [[{ serialCount, idCount }]] = await pool.query(sqlStringCount, [req.body.serialNumber, req.body.internalId]);
-    
-    // Double equals are needed since the numbers are returned as strings.
-    const isUniqueSerial = serialCount == 0;
-    const isUniqueId = idCount == 0;
-
-    const isNewRegistration = isUniqueSerial && isUniqueId;
+    const { isNewRegistration, isUniqueId, isUniqueSerial } = await checkRegistration(req);
     if (isNewRegistration) {
         // Searches for a corresponding row in qc2 based on the internal ID.
         const sqlStringQc2 = `
@@ -109,6 +96,10 @@ app.post('/api/registration', async (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     try {
+        const {isNewRegistration} = await checkRegistration();
+        if (!isNewRegistration) {
+            throw new Error('Duplicate registration!');
+        }
         const [[{ currentId }]] = await pool.query('SELECT MAX(id_tracker) as currentId FROM test_tracker');
         console.log(currentId);
         const values = [
@@ -143,6 +134,7 @@ app.post('/api/registration', async (req, res) => {
         pool.execute(sqlStringInsert, values);
     } catch (err) {
         res.json({ isSuccessfulSubmit: false, err });
+        return;
     }
     res.json({ isSuccessfulSubmit: true });
 });
@@ -185,3 +177,21 @@ app.post('/api/password', (req, res) => {
         res.json({ success: false });
     }
 });
+
+async function checkRegistration(req) {
+    const sqlStringCount = `
+    SELECT
+        SUM(LOWER(serial_number) LIKE LOWER(?)) as serialCount,
+        SUM(numero_cafetera = ?) as idCount
+    FROM test_tracker`;
+
+    // Triple destructuring since the query returns the rows, metadata, and individual properties.
+    const [[{ serialCount, idCount }]] = await pool.query(sqlStringCount, [req.body.serialNumber, req.body.internalId]);
+
+    // Double equals are needed since the numbers are returned as strings.
+    const isUniqueSerial = serialCount == 0;
+    const isUniqueId = idCount == 0;
+
+    const isNewRegistration = isUniqueSerial && isUniqueId;
+    return { isNewRegistration, isUniqueId, isUniqueSerial };
+}
