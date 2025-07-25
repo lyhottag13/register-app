@@ -1,6 +1,7 @@
 import getISOWeek from "./utils/getISOWeek.js";
 import { getPoNumber, createModal, setActivePo } from "./utils/poModal.js";
 import Slider from "./utils/slider.js";
+import handleQc2Insert from "./utils/handleQc2Insert.js";
 
 const poDiv = document.getElementById('po');
 const actualButton = document.getElementById('actual');
@@ -235,7 +236,9 @@ async function handleSubmit() {
         currentRegistration.oneCup = oneCupInput.value;
         currentRegistration.rework = reworkCheckBox.value;
         currentRegistration.notes = notesInput.value;
-        if (await sendRegistration(currentRegistration)) {
+
+        const sendData = await sendRegistration(currentRegistration);
+        if (sendData) {
             console.log('Successful Submit!');
             reset();
             await swapScreens(1);
@@ -256,35 +259,42 @@ async function handleSubmit() {
  * @returns Whether or not the first screen's inputs are valid.
  */
 async function isValidFirstScreen() {
-    let firstScreenErr = '';
+    let errorMessage = '';
     if (internalIdInput.value.length !== 6) {
-        firstScreenErr += 'ID interna inválida\n';
+        errorMessage += 'ID interna inválida\n';
     }
     if (internalSerialInput.value !== externalSerial1Input.value || internalSerialInput.value !== externalSerial2Input.value) {
-        firstScreenErr += 'Números de serie no coinciden\n';
+        errorMessage += 'Números de serie no coinciden\n';
     }
     // Checks only one input's length since their equality is already established.
     if (internalSerialInput.value.length !== 17) {
-        firstScreenErr += 'Longitud del número de serie inválida\n';
+        errorMessage += 'Longitud del número de serie inválida\n';
     }
     // Slices the serial number since in APBUAESAXXXXAAAAA, the datecode is XXXX.
     const serialNumberDatecode = internalSerialInput.value.slice(8, 12);
     if (serialNumberDatecode !== datecode.innerText.slice(10)) {
-        firstScreenErr += 'Datecode inválido\n';
+        errorMessage += 'Datecode inválido\n';
     }
-    if (firstScreenErr.length > 0) {
-        window.alert(firstScreenErr);
+    if (errorMessage.length > 0) {
+        window.alert(errorMessage);
         return false;
     }
-    const { isValidFirstSend, qc2, err } = await sendPotentialFirstScreen();
+    const { isValidFirstSend, qc2, err, qc2Override } = await sendPotentialFirstScreen();
     if (qc2) {
         currentRegistration.qc2 = qc2;
+    } else if (qc2Override) {
+        // If there isn't a qc2 but the send was valid, ask to input qc2 manually.
+        window.alert(err);
+        const revisedQc2 = await handleQc2Insert(internalIdInput.value);
+        if (revisedQc2) {
+            currentRegistration.qc2 = revisedQc2;
+            return true;
+        }
     } else if (err) {
         window.alert(err);
-        handleQc2Insert();
     } else {
         // Backup error message if there is no QC2 and no error returned either.
-        window.alert('Something went wrong!');
+        window.alert('Algo fue mal!');
     }
     return isValidFirstSend;
 }
@@ -356,6 +366,7 @@ async function sendRegistration() {
         })
     })).json();
     if (data.err) {
+        window.alert(data.err);
         return false;
     } else {
         return true;

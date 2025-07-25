@@ -31,8 +31,8 @@ app.get('/', (req, res) => {
 // Checks to see if the connection between the app and the server is successful before continuing.
 let isTesting = false;
 app.get('/api/testConnection', async (req, res) => {
-    if (isTesting) { 
-        return; 
+    if (isTesting) {
+        return;
     }
     isTesting = true;
     res.json({ connectionSuccessful: await testConnection() });
@@ -70,7 +70,7 @@ app.post('/api/firstSend', async (req, res) => {
         if (qc2) {
             res.json({ isValidFirstSend: true, qc2 });
         } else {
-            res.json({ isValidFirstSend: false, err: 'No hay registros de QC2' });
+            res.json({ isValidFirstSend: false, err: 'No hay registros de QC2', qc2Override: true });
         }
     } else {
         // Creates verbose error message.
@@ -96,7 +96,8 @@ app.post('/api/registration', async (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     try {
-        const {isNewRegistration} = await checkRegistration();
+        const req2 = { body: { serialNumber: r.serialNumber, internalId: r.internalId } };
+        const { isNewRegistration } = await checkRegistration(req2);
         if (!isNewRegistration) {
             throw new Error('Duplicate registration!');
         }
@@ -166,7 +167,62 @@ app.post('/api/setActivePo', async (req, res) => {
         await pool.query('UPDATE po_list SET po_order = ? WHERE id = 1', [req.body.po]);
         res.json({ isValid: true });
     } catch (err) {
-        res.json({ isValid: false, err: 'Orden de compra ya cerrada' });
+        res.json({ isValid: false, err: 'Orden de compra ya cerrada.' });
+    }
+});
+
+app.post('/api/insertQc2', async (req, res) => {
+    const { qc2 } = req.body;
+    try {
+        const sqlString = `
+        INSERT INTO qc2 
+        (internal_number, initial_wattage, initial_wattage_result, pump_wattage,
+        pump_wattage_result, heating, heating_result, heating_time, heating_time_result,
+        bar_opv, bar_opv_result, dual_wall_filter, dual_wall_filter_result,
+        final_status, retest, test_time, date, time)
+            VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const values = [
+            qc2.internal_number,
+            qc2.initial_wattage,
+            'PASS',
+            qc2.pump_wattage,
+            'PASS',
+            qc2.heating,
+            'PASS',
+            qc2.heating_time,
+            'PASS',
+            qc2.bar_opv,
+            'PASS',
+            qc2.dual_wall_filter,
+            'PASS',
+            'PASS',
+            0,
+            0,
+            new Date().toLocaleDateString('en-CA'),
+            new Date().toLocaleTimeString('en-CA', {hour12: false})
+        ];
+        pool.query(sqlString, values);
+        res.json({ success: true });
+    } catch (err) {
+        res.json({ success: false });
+    }
+});
+
+app.post('/api/insertQc2Fail', async (req, res) => {
+    const { qc2 } = req.body;
+    try {
+        const sqlString = `
+        INSERT INTO qc2_unregistered (internal_id, datetime)
+        VALUES (?, ?)
+        `;
+
+        pool.query(sqlString, [qc2.internal_number, new Date().toLocaleString('en-CA')]);
+        res.json({ success: true });
+    } catch (err) {
+        console.log(err);
+        res.json({ success: false });
     }
 });
 
