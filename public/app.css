@@ -87,7 +87,7 @@ body {
     right: 0;
     bottom: 0;
     border-top-left-radius: 20px;
-    background-color: blue;
+    background-color: rgb(221, 0, 0);
     div {
         font-size: 40px;
     }

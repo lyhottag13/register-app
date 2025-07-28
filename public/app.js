@@ -1,7 +1,7 @@
 import getISOWeek from "./utils/getISOWeek.js";
 import { getPoNumber, createModal, setActivePo } from "./utils/poModal.js";
 import Slider from "./utils/slider.js";
-import handleQc2Insert, { updateQc2FailCount } from "./utils/handleQc2Insert.js";
+import handleQc2Insert, { setQc2Validations, updateQc2FailCount } from "./utils/handleQc2Insert.js";
 
 const poDiv = document.getElementById('po');
 const actualButton = document.getElementById('actual');
@@ -92,6 +92,7 @@ async function main() {
         }
     }
     setInputValidations();
+    setQc2Validations();
     closeOrderButton.disabled = true;
     document.querySelectorAll('.back').forEach(element => {
         element.addEventListener('click', handleBack);
