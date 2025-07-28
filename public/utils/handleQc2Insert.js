@@ -1,13 +1,4 @@
-import { currentRegistration, swapScreens } from "../app.js";
-
-// Third grid's inputs.
-const initialWattageInput = document.getElementById("initial-wattage");
-const pumpWattageInput = document.getElementById("pump-wattage");
-const heatingInput = document.getElementById("heating");
-const heatingTimeInput = document.getElementById("heating-time");
-const barOpvInput = document.getElementById("bar-opv");
-const dualWallFilterInput = document.getElementById("dual-wall-filter");
-
+import { currentRegistration, swapScreens, elements } from "../app.js";
 
 export default async function handleQc2Insert() {
     if (!window.confirm('Insertar valores de QC2?')) {
@@ -18,14 +9,14 @@ export default async function handleQc2Insert() {
         return;
     }
     const qc2 = {
-        po_number: document.getElementById('po').innerText,
+        po_number: elements.static.poDiv.innerText,
         internal_number: currentRegistration.internalId,
-        initial_wattage: initialWattageInput.value,
-        pump_wattage: pumpWattageInput.value,
-        heating: heatingInput.value,
-        heating_time: heatingTimeInput.value,
-        bar_opv: barOpvInput.value,
-        dual_wall_filter: dualWallFilterInput.value,
+        initial_wattage: elements.grid3.initialWattageInput.value,
+        pump_wattage: elements.grid3.pumpWattageInput.value,
+        heating: elements.grid3.heatingInput.value,
+        heating_time: elements.grid3.heatingTimeInput.value,
+        bar_opv: elements.grid3.barOpvInput.value,
+        dual_wall_filter: elements.grid3.dualWallFilterInput.value,
     }
 
     const isSuccessfulQc2Send = await sendQc2Values(qc2);
@@ -40,12 +31,12 @@ export default async function handleQc2Insert() {
 async function checkQc2Values() {
     let errorMessage = '';
 
-    const initialWattage = initialWattageInput.value;
-    const pumpWattage = pumpWattageInput.value;
-    const heating = heatingInput.value;
-    const heatingTime = heatingTimeInput.value;
-    const barOpv = barOpvInput.value;
-    const dualWallFilter = dualWallFilterInput.value;
+    const initialWattage = elements.grid3.initialWattageInput.value;
+    const pumpWattage = elements.grid3.pumpWattageInput.value;
+    const heating = elements.grid3.heatingInput.value;
+    const heatingTime = elements.grid3.heatingTimeInput.value;
+    const barOpv = elements.grid3.barOpvInput.value;
+    const dualWallFilter = elements.grid3.dualWallFilterInput.value;
 
     // Validates the six user inputs against Breville's standards of excellence.
     if (initialWattage < 0.6 || initialWattage > 1) {
@@ -80,18 +71,15 @@ async function sendQc2Values(qc2) {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            qc2
-        })
+        body: JSON.stringify({ qc2 })
     })).json();
+
     const insertQc2FailData = await (await fetch('/api/insertQc2Fail', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            qc2
-        })
+        body: JSON.stringify({ qc2 })
     })).json();
 
     // Validates if the qc2 inserts were successful.
@@ -116,38 +104,38 @@ export async function updateQc2FailCount() {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            po: document.getElementById('po').innerText
+            po: elements.static.poDiv.innerText
         })
     })).json();
+
     if (data.err) {
         window.alert(data.err);
     } else {
-        document.getElementById('qc2-total-count').innerText = `Total:\n${data.failCountTotal}`;
-        document.getElementById('qc2-today-count').innerText = `Hoy:\n${data.failCountToday}`;
+        elements.static.qc2TotalCount.innerText = `Total:\n${data.failCountTotal}`;
+        elements.static.qc2TodayCount.innerText = `Hoy:\n${data.failCountToday}`;
     }
 }
 
 export function setQc2Validations() {
-    initialWattageInput.addEventListener('input', function () {
+    elements.grid3.initialWattageInput.addEventListener('input', function () {
         setColorBasedOnRange(this, 0.6, 1);
     });
-    pumpWattageInput.addEventListener('input', function () {
+    elements.grid3.pumpWattageInput.addEventListener('input', function () {
         setColorBasedOnRange(this, 35, 58);
     });
-    heatingInput.addEventListener('input', function () {
+    elements.grid3.heatingInput.addEventListener('input', function () {
         setColorBasedOnRange(this, 1440, 1650);
-    })
-    heatingTimeInput.addEventListener('input', function () {
+    });
+    elements.grid3.heatingTimeInput.addEventListener('input', function () {
         setColorBasedOnRange(this, 0, 55);
     });
-    barOpvInput.addEventListener('input', function () {
+    elements.grid3.barOpvInput.addEventListener('input', function () {
         setColorBasedOnRange(this, 8.5, 11.5);
     });
-    dualWallFilterInput.addEventListener('input', function () {
+    elements.grid3.dualWallFilterInput.addEventListener('input', function () {
         setColorBasedOnRange(this, 5, 9999);
     });
 
-    // Sets the color based on the range input, if it's outside the range, red, else green.
     function setColorBasedOnRange(object, min, max) {
         if (object.value < min || object.value > max) {
             object.style.backgroundColor = 'rgba(255, 77, 77, 1)';

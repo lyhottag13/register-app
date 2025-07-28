@@ -101,8 +101,7 @@ app.post('/api/register', async (req, res) => {
         if (!isNewRegistration) {
             throw new Error('Duplicate registration!');
         }
-        const [[{ currentId }]] = await pool.query('SELECT MAX(id_tracker) as currentId FROM test_tracker');
-        console.log(currentId);
+        const [[{ currentId }]] = await pool.execute('SELECT MAX(id_tracker) as currentId FROM test_tracker');
         const values = [
             currentId + 1, // id_tracker
             r.po, // po_order
@@ -131,7 +130,7 @@ app.post('/api/register', async (req, res) => {
             `${new Date().toLocaleDateString('en-CA')} ${new Date().toLocaleTimeString('en-US', { hour12: false })}`, // YY-MM-DD XX:XX:XX
             r.notes // comments
         ];
-        console.log(values);
+        console.log(values); // Debug
         pool.execute(sqlStringInsert, values);
     } catch (err) {
         res.json({ isSuccessfulSubmit: false, err });
@@ -259,7 +258,7 @@ async function checkRegistration(serialNumber, internalId) {
     FROM test_tracker`;
 
     // Triple destructuring since the query returns the rows, metadata, and individual properties.
-    const [[{ serialCount, idCount }]] = await pool.query(sqlStringCount, [serialNumber, internalId]);
+    const [[{ serialCount, idCount }]] = await pool.execute(sqlStringCount, [serialNumber, internalId]);
 
     // Double equals are needed since the numbers are returned as strings.
     const isUniqueSerial = serialCount == 0;
