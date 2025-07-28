@@ -1,7 +1,7 @@
 import getISOWeek from "./utils/getISOWeek.js";
 import { getPoNumber, createModal, setActivePo } from "./utils/poModal.js";
 import Slider from "./utils/slider.js";
-import handleQc2Insert from "./utils/handleQc2Insert.js";
+import handleQc2Insert, { updateQc2FailCount } from "./utils/handleQc2Insert.js";
 
 const poDiv = document.getElementById('po');
 const actualButton = document.getElementById('actual');
@@ -162,6 +162,7 @@ async function handleActual() {
     if (poNumber.length === 10) {
         if (await setActivePo(poNumber)) {
             updatePoCount();
+            updateQc2FailCount();
             await swapScreens(1);
         }
     } else {
@@ -187,6 +188,8 @@ async function updatePoCount() {
         closeOrderButton.disabled = false;
     }
 }
+
+
 
 /**
  * Handles the Back button. Returns the user to previous screen. Also refocuses

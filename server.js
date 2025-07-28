@@ -214,11 +214,11 @@ app.post('/api/insertQc2Fail', async (req, res) => {
     const { qc2 } = req.body;
     try {
         const sqlString = `
-        INSERT INTO qc2_unregistered (internal_id, datetime)
-        VALUES (?, ?)
+        INSERT INTO qc2_unregistered (internal_id, po_number, datetime)
+        VALUES (?, ?, ?)
         `;
 
-        pool.query(sqlString, [qc2.internal_number, new Date().toLocaleString('en-CA')]);
+        pool.query(sqlString, [qc2.internal_number, qc2.po_number, new Date().toLocaleString('en-CA')]);
         res.json({ success: true });
     } catch (err) {
         console.log(err);
@@ -232,6 +232,23 @@ app.post('/api/password', (req, res) => {
     } else {
         res.json({ success: false });
     }
+});
+
+app.post('/api/getQc2FailCount', async (req, res) => {
+    const sqlStringFailCount = `
+    SELECT 
+        SUM(po_number = ?) as failCountTotal,
+        SUM(po_number = ? AND datetime LIKE ?) as failCountToday
+    FROM qc2_unregistered
+    `;
+    const { po } = req.body;
+    try {
+        const [[{ failCountTotal, failCountToday }]] = await pool.query(sqlStringFailCount, [po, po, `${new Date().toLocaleDateString('en-CA')}%`]);
+        res.json({ failCountTotal, failCountToday });
+    } catch (err) {
+        res.json({ err });
+    }
+
 });
 
 async function checkRegistration(serialNumber, internalId) {

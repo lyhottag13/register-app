@@ -109,7 +109,8 @@ export default async function handleQc2Insert() {
         return;
     }
     currentRegistration.qc2 = qc2;
-    swapScreens(2);
+    await swapScreens(2);
+    updateQc2FailCount();
 }
 
 async function checkQc2Values() {
@@ -148,6 +149,7 @@ async function checkQc2Values() {
     }
 
     qc2 = {
+        po_number: document.getElementById('po').innerText,
         internal_number: currentRegistration.internalId,
         initial_wattage: initialWattage,
         pump_wattage: pumpWattage,
@@ -192,4 +194,22 @@ async function sendQc2Values() {
         return false;
     }
     return true;
+}
+
+export async function updateQc2FailCount() {
+    const data = await (await fetch('/api/getQc2FailCount', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            po: document.getElementById('po').innerText
+        })
+    })).json();
+    if (data.err) {
+        window.alert(data.err);
+    } else {
+        document.getElementById('qc2-total-count').innerText = `Total:\n${data.failCountTotal}`;
+        document.getElementById('qc2-today-count').innerText = `Hoy:\n${data.failCountToday}`;
+    }
 }
