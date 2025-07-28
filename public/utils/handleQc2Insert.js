@@ -1,12 +1,12 @@
 import { currentRegistration, swapScreens } from "../app.js";
 
 // Third grid's inputs.
-const initialWattageInput = document.getElementById("initial_wattage");
-const pumpWattageInput = document.getElementById("pump_wattage");
+const initialWattageInput = document.getElementById("initial-wattage");
+const pumpWattageInput = document.getElementById("pump-wattage");
 const heatingInput = document.getElementById("heating");
-const heatingTimeInput = document.getElementById("heating_time");
-const barOpvInput = document.getElementById("bar_opv");
-const dualWallFilterInput = document.getElementById("dual_wall_filter");
+const heatingTimeInput = document.getElementById("heating-time");
+const barOpvInput = document.getElementById("bar-opv");
+const dualWallFilterInput = document.getElementById("dual-wall-filter");
 
 
 export default async function handleQc2Insert() {

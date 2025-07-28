@@ -27,12 +27,12 @@ const reworkCheckBox = new Slider(document.getElementById('rework'), false);
 const notesInput = document.getElementById('notes');
 
 // Third grid's inputs.
-const initialWattageInput = document.getElementById("initial_wattage");
-const pumpWattageInput = document.getElementById("pump_wattage");
+const initialWattageInput = document.getElementById("initial-wattage");
+const pumpWattageInput = document.getElementById("pump-wattage");
 const heatingInput = document.getElementById("heating");
-const heatingTimeInput = document.getElementById("heating_time");
-const barOpvInput = document.getElementById("bar_opv");
-const dualWallFilterInput = document.getElementById("dual_wall_filter");
+const heatingTimeInput = document.getElementById("heating-time");
+const barOpvInput = document.getElementById("bar-opv");
+const dualWallFilterInput = document.getElementById("dual-wall-filter");
 
 // Static elements.
 const staticElementsTop = document.getElementById('static-elements-top');
@@ -61,15 +61,8 @@ async function main() {
     // Automatically builds the datecode, formatted with the last two year digits and the week number: YYWW.
     datecode.innerText = `Datecode:\n${new Date().toISOString().slice(2, 4) + getISOWeek()}`;
 
-    /*
-    Starts the date-time clock. 
-    The first new Date() isn't really necessary since it can't be seen
-    initially, but the layout might change later.
-    */
-    dateTime.innerText = new Date().toLocaleString();
-    setInterval(() => {
-        dateTime.innerText = new Date().toLocaleString();
-    }, 1000);
+    // Initializes the clock at the bottom of the screens.
+    initializeClock();
 
     // Forces every number input to receive only numbers and ONE decimal point through regex.
     const textInputs = document.getElementsByClassName('number');
@@ -91,9 +84,9 @@ async function main() {
             this.value = realValue;
         }
     }
+    closeOrderButton.disabled = true;
     setInputValidations();
     setQc2Validations();
-    closeOrderButton.disabled = true;
     document.querySelectorAll('.back').forEach(element => {
         element.addEventListener('click', handleBack);
     })
@@ -103,10 +96,9 @@ async function main() {
     submitButton.addEventListener('click', handleSubmit);
     qc2CancelButton.addEventListener('click', () => swapScreens(1));
     qc2SubmitButton.addEventListener('click', handleQc2Insert);
-    swapScreens(0);
+    await swapScreens(0);
     reset();
 }
-
 /**
  * Sets the input validations for each of the inputs. Each validation causes the
  * background color of the inputs to change. The validations are all based on
@@ -147,7 +139,6 @@ function setInputValidations() {
         }
     }
 }
-
 /**
  * Handles the PO Actual button on the 0th screen. Asks for a PO number and
  * swaps to the 1st screen.
@@ -170,28 +161,6 @@ async function handleActual() {
         window.alert('Invalid PO!');
     }
 }
-
-async function updatePoCount() {
-    closeOrderButton.disabled = true;
-    const poCount = await (await fetch('/api/poCount', {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            po: poDiv.innerText
-        })
-    })).json();
-    poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
-    poCountTodayDiv.innerText = `Hoy:\n${poCount.poCountToday}`;
-    // Allows the user to close the order when poCount is over 1115, since the program needs to know when to begin a new order.
-    if (poCount.poCountTotal >= 1115) {
-        closeOrderButton.disabled = false;
-    }
-}
-
-
-
 /**
  * Handles the Back button. Returns the user to previous screen. Also refocuses
  * the user input if the screen is now the 1st.
@@ -216,7 +185,6 @@ async function handleCloseOrder() {
         setTabbable('screen-0');
     }
 }
-
 /**
  * Handles the continue button. This checks to see if the 1st screen's
  * user inputs are valid, then continues to the 2nd screen.
@@ -241,7 +209,6 @@ async function handleContinue() {
         console.log('Failed First Screen!');
     }
 }
-
 /**
  * Handles the submit button on the second screen using currentRegistration's 
  * information. It validates all the information on the second screen and
@@ -275,7 +242,24 @@ async function handleSubmit() {
         console.log('Second Screen Failure!');
     }
 }
-
+async function updatePoCount() {
+    closeOrderButton.disabled = true;
+    const poCount = await (await fetch('/api/poCount', {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            po: poDiv.innerText
+        })
+    })).json();
+    poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
+    poCountTodayDiv.innerText = `Hoy:\n${poCount.poCountToday}`;
+    // Allows the user to close the order when poCount is over 1115, since the program needs to know when to begin a new order.
+    if (poCount.poCountTotal >= 1115) {
+        closeOrderButton.disabled = false;
+    }
+}
 /**
  * Checks to see if the user inputs in the first screen are valid for the application.
  * @returns Whether or not the first screen's inputs are valid.
@@ -346,7 +330,6 @@ async function checkQc2() {
         return false;
     }
 }
-
 /**
  * Checks if the second screen's inputs are valid. This doesn't need a POST
  * to the server, so it's relatively simple. It checks the 2 Cup, 1 Cup, and
@@ -377,7 +360,6 @@ async function isValidSecondScreen() {
 
     return true;
 }
-
 /**
  * Sends the completed registration data to the database. There is a .query() and a .execute()
  * used on the server-side code, so those are the only possibilities for errors here. Usually,
@@ -401,7 +383,6 @@ async function sendRegistration() {
         return true;
     }
 }
-
 /**
  * Swaps between the main screens. Index 0 is the two-button actual/special screen,
  * 1 is the first user input screen, and 2 is the second user input screen.
@@ -410,7 +391,43 @@ async function sendRegistration() {
 export async function swapScreens(nextScreenIndex) {
     const movingScreen = document.getElementById('moving-screen');
 
+    setButtonActionListeners(nextScreenIndex);
+
+    currentScreenIndex = nextScreenIndex;
+    // Happens when the app swaps to the QC2 screen, which is uniquely placed for cooler visual effect.
+    if (nextScreenIndex === 3) {
+        movingScreen.style.transform = `translateX(-100vw) translateY(-100vh)`;
+    } else {
+        movingScreen.style.transform = `translateX(-${nextScreenIndex * 100}vw)`;
+    }
+    // Moves the staticElements since they're only used on the index 1 and 2 screens.
+    if (nextScreenIndex > 0) {
+        staticElementsTop.style.transform = 'translateY(0)';
+        staticElementsBottom.style.transform = 'translateY(100vh) translateY(-100%)';
+    } else {
+        staticElementsTop.style.transform = 'translateY(-100%)';
+        staticElementsBottom.style.transform = 'translateY(100vh)'
+    }
+
+    // Returns when the screen has finished transitioning, useful for .focus() updates.
+    await new Promise(resolve => {
+        movingScreen.addEventListener('transitionend', function handler(e) {
+            movingScreen.removeEventListener('transitionend', handler);
+            resolve(true);
+        });
+    });
+    if (nextScreenIndex === 1) {
+        internalSerialInput.focus();
+    } else if (nextScreenIndex === 2) {
+        twoCupInput.focus();
+    } else if (nextScreenIndex === 3) {
+        document.getElementById('initial-wattage').focus();
+    }
+    setTabbable(`screen-${nextScreenIndex}`);
+}
+function setButtonActionListeners(nextScreenIndex) {
     // Removes the Enter key event listeners from the previous screen's buttons.
+    console.log(currentScreenIndex, nextScreenIndex);
     if (currentScreenIndex === 0) {
         document.removeEventListener('keypress', handleActualKeyPress);
     } else if (currentScreenIndex === 1) {
@@ -431,37 +448,7 @@ export async function swapScreens(nextScreenIndex) {
     } else if (nextScreenIndex === 3) {
         document.addEventListener('keypress', handleQc2SubmitKeyPress);
     }
-
-    currentScreenIndex = nextScreenIndex;
-    if (nextScreenIndex === 3) {
-        movingScreen.style.transform = `translateX(-100vw) translateY(-100vh)`;
-    } else {
-        movingScreen.style.transform = `translateX(-${nextScreenIndex * 100}vw) translateY(0)`;
-    }
-    // Moves the staticElements at the top/bottom of the screen out of/into view since they're only used on the index 1 and 2 screens.
-    if (nextScreenIndex > 0) {
-        staticElementsTop.style.transform = 'translateY(0)';
-        staticElementsBottom.style.transform = 'translateY(100vh) translateY(-100%)';
-    } else {
-        staticElementsTop.style.transform = 'translateY(-100%)';
-        staticElementsBottom.style.transform = 'translateY(100vh)'
-    }
-
-    // Returns when the screen has finished transitioning, useful for .focus() updates.
-    await new Promise(resolve => {
-        movingScreen.addEventListener('transitionend', function handler(e) {
-            movingScreen.removeEventListener('transitionend', handler);
-            resolve(true);
-        });
-    });
-    if (nextScreenIndex === 1) {
-        internalSerialInput.focus();
-    } else if (nextScreenIndex === 2) {
-        twoCupInput.focus();
-    }
-    setTabbable(`screen-${nextScreenIndex}`);
 }
-
 function handleActualKeyPress(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
@@ -486,7 +473,6 @@ function handleQc2SubmitKeyPress(e) {
         handleQc2Insert();
     }
 }
-
 /**
  * Resets all the inputs: ID, serials, QC2s, QC3s, and the checkboxes.
  */
@@ -539,6 +525,16 @@ function setTabbable(parentId) {
         element.tabIndex = 0;
     });
 }
-
+/**
+ * Starts the date-time clock. 
+ * The first new Date() isn't really necessary since it can't be seen
+ * initially, but the layout might change later.
+ */
+function initializeClock() {
+    dateTime.innerText = new Date().toLocaleString();
+    setInterval(() => {
+        dateTime.innerText = new Date().toLocaleString();
+    }, 1000);
+}
 // Runs the main function after everything else in the top-level of the js file has run.
 main();

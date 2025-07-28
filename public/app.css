@@ -50,6 +50,7 @@ body {
 #po {
     background-color: rgb(160, 0, 0);
     border-radius: 50px;
+    font-weight: 1000;
     text-align: center;
     justify-content: center;
     align-content: center;
@@ -88,7 +89,13 @@ body {
     bottom: 0;
     border-top-left-radius: 20px;
     background-color: rgb(221, 0, 0);
+
     div {
+        font-size: 40px;
+    }
+
+    div:nth-child(1) {
+        font-weight: 1000;
         font-size: 40px;
     }
 }
@@ -121,6 +128,12 @@ body {
 
 #screen-0 img {
     margin-top: 20px;
+    border-radius: 20px;
+}
+
+#screen-0-buttons {
+    background-color: rgb(166, 166, 166);
+    padding: 40px;
     border-radius: 20px;
 }
 
@@ -159,6 +172,7 @@ body {
 }
 
 .buttons button {
+    font-weight: 700;
     border-radius: 20px;
     border: 0;
 }
