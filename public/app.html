@@ -18,6 +18,11 @@
             </div>
             <div id="static-elements-bottom">
                 <div id="date-time">I'm the date-time :D</div>
+                <div id="qc2">
+                    <div>QC2 Errors:</div>
+                    <div>Total:</div>
+                    <div>Hoy:</div>
+                </div>
             </div>
         </div>
         <div id="moving-screen">
@@ -60,6 +65,22 @@
                     <button id="back-2" class="back">Regresar</button>
                     <textarea id="notes" placeholder="Commentarios"></textarea>
                     <button id="submit">Enviar</button>
+                </div>
+            </div>
+            <div id="screen-3" class="screen">
+                <div class="center-grid">
+                    <input type="text" id="initial_wattage" class="number" placeholder="Conectado" maxlength="5">
+                    <input type="text" id="pump_wattage" class="number" placeholder="Inicial Pump" maxlength="5">
+                    <input type="text" id="heating" class="number" placeholder="Thermocoil" maxlength="5">
+                    <input type="text" id="heating_time" class="number" placeholder="Tiempo" maxlength="5">
+                    <input type="text" id="bar_opv" class="number" placeholder="Manometro" maxlength="5">
+                    <input type="text" id="dual_wall_filter" class="number" placeholder="Filtro" maxlength="5">
+                    <div class="buttons">
+                        <button id="back-3">Cancelar</button>
+                        <!-- Empty div to pad out the .buttons template -->
+                        <div></div>
+                        <button id="submit-qc2">Enviar</button>
+                    </div>
                 </div>
             </div>
         </div>

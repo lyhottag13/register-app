@@ -50,30 +50,15 @@ app.post('/api/poCount', async (req, res) => {
 });
 
 /**
- * Handles the firstSend API. This checks to see if either the serial number or
+ * Handles the sendFirstScreen API. This checks to see if either the serial number or
  * internal ID already exist in the database, then returns the results.
  */
-app.post('/api/firstSend', async (req, res) => {
-    // SQL query to return whether or not the internal ID or serial number already exist in test_tracker.
-    const { isNewRegistration, isUniqueId, isUniqueSerial } = await checkRegistration(req);
+app.post('/api/checkRegistration', async (req, res) => {
+    const { isNewRegistration, isUniqueId, isUniqueSerial } = await checkRegistration(req.body.serialNumber, req.body.internalId);
+    // Creates verbose error message.
     if (isNewRegistration) {
-        // Searches for a corresponding row in qc2 based on the internal ID.
-        const sqlStringQc2 = `
-        SELECT * FROM qc2 
-        WHERE internal_number = ? 
-        AND final_status = 'PASS' 
-        ORDER BY date DESC`;
-
-        // qc2 is returned as a JSON object.
-        const [[qc2]] = await pool.query(sqlStringQc2, [req.body.internalId]);
-
-        if (qc2) {
-            res.json({ isValidFirstSend: true, qc2 });
-        } else {
-            res.json({ isValidFirstSend: false, err: 'No hay registros de QC2', qc2Override: true });
-        }
+        res.json({ isValidFirstSend: true });
     } else {
-        // Creates verbose error message.
         let err;
         if (!isUniqueId && !isUniqueSerial) {
             err = 'ID y número de serie ya registrados';
@@ -85,8 +70,24 @@ app.post('/api/firstSend', async (req, res) => {
         res.json({ isValidFirstSend: false, err });
     }
 });
+app.post('/api/checkQc2', async (req, res) => {
+    // Searches for a corresponding row in qc2 based on the internal ID.
+    const sqlStringQc2 = `
+        SELECT * FROM qc2 
+        WHERE internal_number = ? 
+        AND final_status = 'PASS' 
+        ORDER BY date DESC`;
 
-app.post('/api/registration', async (req, res) => {
+    // qc2 is returned as an object.
+    const [[qc2]] = await pool.query(sqlStringQc2, [req.body.internalId]);
+    if (qc2) {
+        res.json({ qc2 });
+    } else {
+        res.json({ err: 'No hay registros de QC2' });
+    }
+});
+
+app.post('/api/register', async (req, res) => {
     const r = req.body.currentRegistration; // Shortened so I have to type less.
     const sqlStringInsert = `
     INSERT INTO test_tracker (id_tracker, po_order, serial_number, numero_cafetera, datecode, rework,
@@ -96,8 +97,7 @@ app.post('/api/registration', async (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     try {
-        const req2 = { body: { serialNumber: r.serialNumber, internalId: r.internalId } };
-        const { isNewRegistration } = await checkRegistration(req2);
+        const { isNewRegistration } = await checkRegistration(r.serialNumber, r.internalId);
         if (!isNewRegistration) {
             throw new Error('Duplicate registration!');
         }
@@ -201,7 +201,7 @@ app.post('/api/insertQc2', async (req, res) => {
             0,
             0,
             new Date().toLocaleDateString('en-CA'),
-            new Date().toLocaleTimeString('en-CA', {hour12: false})
+            new Date().toLocaleTimeString('en-CA', { hour12: false })
         ];
         pool.query(sqlString, values);
         res.json({ success: true });
@@ -234,7 +234,7 @@ app.post('/api/password', (req, res) => {
     }
 });
 
-async function checkRegistration(req) {
+async function checkRegistration(serialNumber, internalId) {
     const sqlStringCount = `
     SELECT
         SUM(LOWER(serial_number) LIKE LOWER(?)) as serialCount,
@@ -242,7 +242,7 @@ async function checkRegistration(req) {
     FROM test_tracker`;
 
     // Triple destructuring since the query returns the rows, metadata, and individual properties.
-    const [[{ serialCount, idCount }]] = await pool.query(sqlStringCount, [req.body.serialNumber, req.body.internalId]);
+    const [[{ serialCount, idCount }]] = await pool.query(sqlStringCount, [serialNumber, internalId]);
 
     // Double equals are needed since the numbers are returned as strings.
     const isUniqueSerial = serialCount == 0;

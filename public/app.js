@@ -9,6 +9,8 @@ const specialButton = document.getElementById('special');
 const closeOrderButton = document.getElementById('close-order');
 const continueButton = document.getElementById('continue');
 const submitButton = document.getElementById('submit');
+const qc2CancelButton = document.getElementById('back-3');
+const qc2SubmitButton = document.getElementById('submit-qc2');
 
 // First grid's inputs.
 const internalSerialInput = document.getElementById('internal-serial');
@@ -24,6 +26,14 @@ const otherTestCheckBox = new Slider(document.getElementById('other-tests'), fal
 const reworkCheckBox = new Slider(document.getElementById('rework'), false);
 const notesInput = document.getElementById('notes');
 
+// Third grid's inputs.
+const initialWattageInput = document.getElementById("initial_wattage");
+const pumpWattageInput = document.getElementById("pump_wattage");
+const heatingInput = document.getElementById("heating");
+const heatingTimeInput = document.getElementById("heating_time");
+const barOpvInput = document.getElementById("bar_opv");
+const dualWallFilterInput = document.getElementById("dual_wall_filter");
+
 // Static elements.
 const staticElementsTop = document.getElementById('static-elements-top');
 const datecode = document.getElementById('datecode');
@@ -33,12 +43,13 @@ const staticElementsBottom = document.getElementById('static-elements-bottom');
 const dateTime = document.getElementById('date-time');
 
 // The current registration represented as an object to hold any number of properties.
-const currentRegistration = {};
+export const currentRegistration = {};
 
 let currentScreenIndex = 0; // Tracks the current screen, useful for the back button.
 
 async function main() {
     createModal(); // Creates the PO number modal for later use.
+
     // Checks for a successful connection to the database before continuing.
     const { connectionSuccessful } = await (await fetch('/api/testConnection')).json();
     if (connectionSuccessful) {
@@ -60,11 +71,24 @@ async function main() {
         dateTime.innerText = new Date().toLocaleString();
     }, 1000);
 
-    // Forces every number input to receive only numbers through regex.
+    // Forces every number input to receive only numbers and ONE decimal point through regex.
     const textInputs = document.getElementsByClassName('number');
     for (let numberInput of textInputs) {
         numberInput.oninput = function () {
-            this.value = this.value.replace(/[^0-9]/g, '');
+            // Splits up the digits based on their position before or after the decimal point.
+            const numberDigits = this.value.split('.');
+
+            // Only adds a decimal point to the end if the original has a decimal point.
+            let realValue = numberDigits[0] + (this.value.includes('.') ? '.' : '');
+
+            // Appends the remaining digits to the string.
+            for (let i = 1; i < numberDigits.length; i++) {
+                realValue += numberDigits[i];
+            }
+
+            // Replaces any alphabetic characters using regex.
+            realValue = realValue.replace(/[^0-9.]/g, '');
+            this.value = realValue;
         }
     }
     setInputValidations();
@@ -76,6 +100,9 @@ async function main() {
     closeOrderButton.addEventListener('click', handleCloseOrder);
     continueButton.addEventListener('click', handleContinue);
     submitButton.addEventListener('click', handleSubmit);
+    qc2CancelButton.addEventListener('click', () => swapScreens(1));
+    qc2SubmitButton.addEventListener('click', handleQc2Insert);
+    swapScreens(0);
     reset();
 }
 
@@ -132,29 +159,14 @@ async function handleActual() {
     const poNumber = `po${poNumberIncomplete}`;
     poDiv.innerText = poNumber;
     // Rudimentary poNumber check.
-    if (isValidPo(poNumber)) {
+    if (poNumber.length === 10) {
         if (await setActivePo(poNumber)) {
             updatePoCount();
-            // Delays the focus because the scroll malfunctions otherwise.
             await swapScreens(1);
-            internalSerialInput.focus();
-            setTabbable('screen-1');
         }
     } else {
         window.alert('Invalid PO!');
     }
-}
-/**
- * Checks if the poNumber is valid. The PO requires 10 characters, including
- * the po at the beginning.
- * @param {number} poNumber The PO number as poXXXXXXXX.
- * @returns If the poNumber is valid.
- */
-function isValidPo(poNumber) {
-    if (poNumber.length !== 10) {
-        return false;
-    }
-    return true;
 }
 
 async function updatePoCount() {
@@ -206,15 +218,21 @@ async function handleCloseOrder() {
  * user inputs are valid, then continues to the 2nd screen.
  */
 async function handleContinue() {
-    if (await isValidFirstScreen()) {
+    const isValidFirstScreen = await checkFirstScreen();
+    if (isValidFirstScreen) {
         currentRegistration.po = poDiv.innerText;
         currentRegistration.internalId = internalIdInput.value;
         currentRegistration.serialNumber = internalSerialInput.value;
         currentRegistration.datecode = datecode.innerText;
         console.log('Successful First Screen!');
-        await swapScreens(2);
-        twoCupInput.focus();
-        setTabbable('screen-2');
+        const isValidQc2 = await checkQc2();
+        if (isValidQc2) {
+            console.log('Successful QC2 Check!');
+            await swapScreens(2);
+        } else {
+            console.log('Failed QC2 Check!');
+            await swapScreens(3);
+        }
     } else {
         console.log('Failed First Screen!');
     }
@@ -258,7 +276,7 @@ async function handleSubmit() {
  * Checks to see if the user inputs in the first screen are valid for the application.
  * @returns Whether or not the first screen's inputs are valid.
  */
-async function isValidFirstScreen() {
+async function checkFirstScreen() {
     let errorMessage = '';
     if (internalIdInput.value.length !== 6) {
         errorMessage += 'ID interna inválida\n';
@@ -279,24 +297,13 @@ async function isValidFirstScreen() {
         window.alert(errorMessage);
         return false;
     }
-    const { isValidFirstSend, qc2, err, qc2Override } = await sendPotentialFirstScreen();
-    if (qc2) {
-        currentRegistration.qc2 = qc2;
-    } else if (qc2Override) {
-        // If there isn't a qc2 but the send was valid, ask to input qc2 manually.
-        window.alert(err);
-        const revisedQc2 = await handleQc2Insert(internalIdInput.value);
-        if (revisedQc2) {
-            currentRegistration.qc2 = revisedQc2;
-            return true;
-        }
-    } else if (err) {
-        window.alert(err);
+    const { isValidFirstSend, err } = await checkRegistration();
+    if (isValidFirstSend) {
+        return true;
     } else {
-        // Backup error message if there is no QC2 and no error returned either.
-        window.alert('Algo fue mal!');
+        window.alert(err);
+        return false;
     }
-    return isValidFirstSend;
 }
 /**
  * Sends the data from the first screen, after it has been checked by app.js's checks,
@@ -304,8 +311,8 @@ async function isValidFirstScreen() {
  * exist in the database. After this, it returns the QC2 data if there is any.
  * @returns An object with isValidFirstSend and either an error or the QC2 data.
  */
-async function sendPotentialFirstScreen() {
-    const data = await (await fetch('/api/firstSend', {
+async function checkRegistration() {
+    const data = await (await fetch('/api/checkRegistration', {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -316,6 +323,24 @@ async function sendPotentialFirstScreen() {
         })
     })).json();
     return data;
+}
+async function checkQc2() {
+    const data = await (await fetch('/api/checkQc2', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            internalId: internalIdInput.value
+        })
+    })).json();
+    if (data.qc2) {
+        currentRegistration.qc2 = data.qc2;
+        return true;
+    } else {
+        window.alert(data.err);
+        return false;
+    }
 }
 
 /**
@@ -356,7 +381,7 @@ async function isValidSecondScreen() {
  * errors aren't common here.
  */
 async function sendRegistration() {
-    const data = await (await fetch('/api/registration', {
+    const data = await (await fetch('/api/register', {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
@@ -378,26 +403,37 @@ async function sendRegistration() {
  * 1 is the first user input screen, and 2 is the second user input screen.
  * @param {number} nextScreenIndex The index of the desired screen.
  */
-async function swapScreens(nextScreenIndex) {
+export async function swapScreens(nextScreenIndex) {
     const movingScreen = document.getElementById('moving-screen');
-    console.log(currentScreenIndex);
-    console.log(nextScreenIndex);
+
     // Removes the Enter key event listeners from the previous screen's buttons.
-    if (currentScreenIndex === 1) {
+    if (currentScreenIndex === 0) {
+        document.removeEventListener('keypress', handleActualKeyPress);
+    } else if (currentScreenIndex === 1) {
         document.removeEventListener('keypress', handleContinueKeyPress);
     } else if (currentScreenIndex === 2) {
         document.removeEventListener('keypress', handleSubmitKeyPress);
+    } else if (currentScreenIndex === 3) {
+        document.removeEventListener('keypress', handleQc2SubmitKeyPress);
     }
 
     // Adds the Enter key listeners to the next screen's buttons.
-    if (nextScreenIndex === 1) {
+    if (nextScreenIndex === 0) {
+        document.addEventListener('keypress', handleActualKeyPress);
+    } else if (nextScreenIndex === 1) {
         document.addEventListener('keypress', handleContinueKeyPress);
     } else if (nextScreenIndex === 2) {
         document.addEventListener('keypress', handleSubmitKeyPress)
+    } else if (nextScreenIndex === 3) {
+        document.addEventListener('keypress', handleQc2SubmitKeyPress);
     }
 
     currentScreenIndex = nextScreenIndex;
-    movingScreen.style.transform = `translateX(-${nextScreenIndex * 100}vw)`;
+    if (nextScreenIndex === 3) {
+        movingScreen.style.transform = `translateX(-100vw) translateY(-100vh)`;
+    } else {
+        movingScreen.style.transform = `translateX(-${nextScreenIndex * 100}vw) translateY(0)`;
+    }
     // Moves the staticElements at the top/bottom of the screen out of/into view since they're only used on the index 1 and 2 screens.
     if (nextScreenIndex > 0) {
         staticElementsTop.style.transform = 'translateY(0)';
@@ -406,6 +442,7 @@ async function swapScreens(nextScreenIndex) {
         staticElementsTop.style.transform = 'translateY(-100%)';
         staticElementsBottom.style.transform = 'translateY(100vh)'
     }
+
     // Returns when the screen has finished transitioning, useful for .focus() updates.
     await new Promise(resolve => {
         movingScreen.addEventListener('transitionend', function handler(e) {
@@ -413,6 +450,19 @@ async function swapScreens(nextScreenIndex) {
             resolve(true);
         });
     });
+    if (nextScreenIndex === 1) {
+        internalSerialInput.focus();
+    } else if (nextScreenIndex === 2) {
+        twoCupInput.focus();
+    }
+    setTabbable(`screen-${nextScreenIndex}`);
+}
+
+function handleActualKeyPress(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        handleActual();
+    }
 }
 function handleSubmitKeyPress(e) {
     if (e.key === 'Enter') {
@@ -426,9 +476,15 @@ function handleContinueKeyPress(e) {
         handleContinue();
     }
 }
+function handleQc2SubmitKeyPress(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        handleQc2Insert();
+    }
+}
 
 /**
- * Resets all the inputs: ID, serials, QC3s, and the checkboxes.
+ * Resets all the inputs: ID, serials, QC2s, QC3s, and the checkboxes.
  */
 function reset() {
     internalSerialInput.value = '';
@@ -445,7 +501,13 @@ function reset() {
     oneCupInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
     timeInput.value = '';
     timeInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
-    window.scroll(0, 0); // If the user presses tab too much, the viewport malfunctions.
+    initialWattageInput.value = '';
+    pumpWattageInput.value = '';
+    heatingInput.value = '';
+    heatingTimeInput.value = '';
+    barOpvInput.value = '';
+    dualWallFilterInput.value = '';
+    window.scroll(0, 0); // If the user presses tab too much, the viewport malfunctions, so this resets it.
     otherTestCheckBox.setValue(false);
     reworkCheckBox.setValue(false);
     notesInput.value = '';
