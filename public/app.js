@@ -49,6 +49,7 @@ async function main() {
 
     elements.controls.closeOrderButton.disabled = true;
 
+    // Sets the inputs to get colors based on various validations.
     setInputValidations();
     setQc2Validations();
 
@@ -121,14 +122,15 @@ async function handleActual() {
     const poNumber = `po${poNumberIncomplete}`;
     elements.static.poDiv.innerText = poNumber;
 
-    if (poNumber.length === 10) {
-        if (await setActivePo(poNumber)) {
-            updatePoCount();
-            updateQc2FailCount();
-            await swapScreens(1);
-        }
-    } else {
-        window.alert('Invalid PO!');
+    if (poNumber.length !== 10) {
+        window.alert('PO invalida');
+        return;
+    }
+
+    if (await setActivePo(poNumber)) {
+        updatePoCount();
+        updateQc2FailCount();
+        await swapScreens(1);
     }
 }
 
