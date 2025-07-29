@@ -111,8 +111,8 @@ export async function updateQc2FailCount() {
     if (data.err) {
         window.alert(data.err);
     } else {
-        elements.static.qc2TotalCount.innerText = `Total:\n${data.failCountTotal}`;
-        elements.static.qc2TodayCount.innerText = `Hoy:\n${data.failCountToday}`;
+        elements.static.qc2TotalCount.innerHTML = `<p>Total:</p><p>${data.failCountTotal}</p>`;
+        elements.static.qc2TodayCount.innerHTML = `<p>Hoy:</p><p>${data.failCountToday}</p>`;
     }
 }
 

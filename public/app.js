@@ -57,12 +57,15 @@ export const elements = {
     }
 };
 
+// The current registration represented as an object to hold any number of properties.
 export const currentRegistration = {};
-let currentScreenIndex = 0;
+
+let currentScreenIndex = 0; // Tracks the current screen, useful for the back button.
 
 async function main() {
-    createModal();
+    createModal(); // Creates the PO number modal for later use.
 
+    // Checks for a successful connection to the database before continuing.
     const { connectionSuccessful } = await (await fetch('/api/testConnection')).json();
     if (connectionSuccessful) {
         window.alert('Conexion exitosa');
@@ -71,24 +74,35 @@ async function main() {
         return;
     }
 
+    // Automatically builds the datecode, formatted with the last two year digits and the week number: YYWW.
     elements.static.datecode.innerText = `Datecode:\n${new Date().toISOString().slice(2, 4) + getISOWeek()}`;
 
+    // Initializes the clock at the bottom of the screens.
     initializeClock();
 
+    // Forces every number input to receive only numbers and ONE decimal point through regex.
     const textInputs = document.getElementsByClassName('number');
     for (let numberInput of textInputs) {
         numberInput.oninput = function () {
+            // Splits up the digits based on their position before or after the decimal point.
             const numberDigits = this.value.split('.');
+
+            // Only adds a decimal point to the end if the original has a decimal point.
             let realValue = numberDigits[0] + (this.value.includes('.') ? '.' : '');
+
+            // Appends the remaining digits to the string.
             for (let i = 1; i < numberDigits.length; i++) {
                 realValue += numberDigits[i];
             }
+
+            // Replaces any alphabetic characters using regex.
             realValue = realValue.replace(/[^0-9.]/g, '');
             this.value = realValue;
         }
     }
 
     elements.controls.closeOrderButton.disabled = true;
+
     setInputValidations();
     setQc2Validations();
 
@@ -107,6 +121,11 @@ async function main() {
     reset();
 }
 
+/**
+ * Sets the input validations for each of the inputs. Each validation causes the
+ * background color of the inputs to change. The validations are all based on
+ * length.
+ */
 function setInputValidations() {
     elements.grid1.internalSerialInput.addEventListener('input', handleSerialNumbers);
     elements.grid1.externalSerial1Input.addEventListener('input', handleSerialNumbers);
@@ -144,6 +163,10 @@ function setInputValidations() {
     }
 }
 
+/**
+ * Handles the PO Actual button on the 0th screen. Asks for a PO number and
+ * swaps to the 1st screen.
+ */
 async function handleActual() {
     const poNumberIncomplete = await getPoNumber();
     if (poNumberIncomplete === 'CANCEL') {
@@ -163,6 +186,10 @@ async function handleActual() {
     }
 }
 
+/**
+ * Handles the Back button. Returns the user to previous screen. Also refocuses
+ * the user input if the screen is now the 1st.
+ */
 async function handleBack() {
     await swapScreens(currentScreenIndex - 1);
     setTabbable(`screen-${currentScreenIndex}`);
@@ -171,6 +198,10 @@ async function handleBack() {
     }
 }
 
+/**
+ * Handles the closeOrderButton. Sends out an API call to close the order,
+ * which the server follows through on.
+ */
 async function handleCloseOrder() {
     if (window.confirm('Cerrar orden?')) {
         fetch('/api/closeOrder');
@@ -180,6 +211,10 @@ async function handleCloseOrder() {
     }
 }
 
+/**
+ * Handles the continue button. This checks to see if the 1st screen's
+ * user inputs are valid, then continues to the 2nd screen.
+ */
 async function handleContinue() {
     const isValidFirstScreen = await checkFirstScreen();
     if (!isValidFirstScreen) {
@@ -204,6 +239,11 @@ async function handleContinue() {
     await swapScreens(2);
 }
 
+/**
+ * Handles the submit button on the second screen using currentRegistration's 
+ * information. It validates all the information on the second screen and
+ * captures it into currentRegistration, then sends it to the server.
+ */
 async function handleSubmit() {
     if (!window.confirm('Enviar?')) {
         return;
@@ -230,6 +270,7 @@ async function handleSubmit() {
     console.log('Successful Submit!');
     reset();
     await swapScreens(1);
+    // This update can't be instant since the database submit needs time to go through.
     updatePoCount();
 }
 
@@ -246,12 +287,16 @@ async function updatePoCount() {
     })).json();
     elements.static.poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
     elements.static.poCountTodayDiv.innerText = `Hoy:\n${poCount.poCountToday}`;
-
+    // Allows the user to close the order when poCount is over 1115, since the program needs to know when to begin a new order.
     if (poCount.poCountTotal >= 1115) {
         elements.controls.closeOrderButton.disabled = false;
     }
 }
 
+/**
+ * Checks to see if the user inputs in the first screen are valid for the application.
+ * @returns Whether or not the first screen's inputs are valid.
+ */
 async function checkFirstScreen() {
     let errorMessage = '';
     if (elements.grid1.internalIdInput.value.length !== 6) {
@@ -260,9 +305,11 @@ async function checkFirstScreen() {
     if (elements.grid1.internalSerialInput.value !== elements.grid1.externalSerial1Input.value || elements.grid1.internalSerialInput.value !== elements.grid1.externalSerial2Input.value) {
         errorMessage += 'Números de serie no coinciden\n';
     }
+    // Checks only one input's length since their equality is already established.
     if (elements.grid1.internalSerialInput.value.length !== 17) {
         errorMessage += 'Longitud del número de serie inválida\n';
     }
+    // Slices the serial number since in APBUAESAXXXXAAAAA, the datecode is XXXX.
     const serialNumberDatecode = elements.grid1.internalSerialInput.value.slice(8, 12);
     if (serialNumberDatecode !== elements.static.datecode.innerText.slice(10)) {
         errorMessage += 'Datecode inválido\n';
@@ -280,6 +327,12 @@ async function checkFirstScreen() {
     }
 }
 
+/**
+ * Sends the data from the first screen, after it has been checked by app.js's checks,
+ * to the server to see whether the serial number and internal ID already
+ * exist in the database. After this, it returns the QC2 data if there is any.
+ * @returns An object with isValidFirstSend and either an error or the QC2 data.
+ */
 async function checkRegistration() {
     const data = await (await fetch('/api/checkRegistration', {
         method: "POST",
@@ -313,6 +366,13 @@ async function checkQc2() {
     }
 }
 
+/**
+ * Checks if the second screen's inputs are valid. This doesn't need a POST
+ * to the server, so it's relatively simple. It checks the 2 Cup, 1 Cup, and
+ * Tiempo inputs for validity in a range of values. This also checks the 
+ * selection of the otherTestsCheckBox, which serves only as a reminder for
+ * the operator that all the tests are PASSes.
+ */
 async function checkSecondScreen() {
     let errorMessage = '';
 
@@ -337,6 +397,12 @@ async function checkSecondScreen() {
     return true;
 }
 
+/**
+ * Sends the completed registration data to the database. There is a .query() and a .execute()
+ * used on the server-side code, so those are the only possibilities for errors here. Usually,
+ * an error with the database connection is flagged at the very beginning of the program, so
+ * errors aren't common here.
+ */
 async function sendRegistration() {
     const data = await (await fetch('/api/register', {
         method: "POST",
@@ -355,6 +421,11 @@ async function sendRegistration() {
     }
 }
 
+/**
+ * Swaps between the main screens. Index 0 is the two-button actual/special screen,
+ * 1 is the first user input screen, and 2 is the second user input screen.
+ * @param {number} nextScreenIndex The index of the desired screen.
+ */
 export async function swapScreens(nextScreenIndex) {
     const movingScreen = document.getElementById('moving-screen');
 
@@ -375,7 +446,7 @@ export async function swapScreens(nextScreenIndex) {
         elements.static.staticElementsTop.style.transform = 'translateY(-100%)';
         elements.static.staticElementsBottom.style.transform = 'translateY(100vh)';
     }
-
+    // Returns when the screen has finished transitioning, useful for .focus() updates.
     await new Promise(resolve => {
         movingScreen.addEventListener('transitionend', function handler(e) {
             movingScreen.removeEventListener('transitionend', handler);
@@ -395,6 +466,7 @@ export async function swapScreens(nextScreenIndex) {
 }
 
 function setButtonActionListeners(nextScreenIndex) {
+    // Removes the Enter key event listeners from the previous screen's buttons.
     if (currentScreenIndex === 0) {
         document.removeEventListener('keypress', handleActualKeyPress);
     } else if (currentScreenIndex === 1) {
@@ -405,6 +477,7 @@ function setButtonActionListeners(nextScreenIndex) {
         document.removeEventListener('keypress', handleQc2SubmitKeyPress);
     }
 
+    // Adds the Enter key listeners to the next screen's buttons.
     if (nextScreenIndex === 0) {
         document.addEventListener('keypress', handleActualKeyPress);
     } else if (nextScreenIndex === 1) {
@@ -441,6 +514,9 @@ function handleQc2SubmitKeyPress(e) {
     }
 }
 
+/**
+ * Resets all the inputs: ID, serials, QC2s, QC3s, and the checkboxes.
+ */
 function reset() {
     elements.grid1.internalSerialInput.value = '';
     elements.grid1.internalSerialInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
@@ -469,11 +545,22 @@ function reset() {
     setTabbable('screen-0');
 }
 
+/**
+ * Sets the HTML elements within a parent element to be tabbable through their
+ * tab-index attribute. 
+ * First sets everything to be untabbable, then sets only the parent's 
+ * children to be tabbable.
+ * Prevents a bug where the user can tab out of the viewport's area and
+ * into a new screen, where they're not supposed to be.
+ * @param {string} parentId The ID of the parent element.
+ */
 function setTabbable(parentId) {
+    // Sets everything to be untabbable.
     const allElements = document.querySelectorAll('*');
     allElements.forEach(element => {
         element.tabIndex = -1;
     });
+    // Sets only the desired elements to be tabbable.
     const parent = document.getElementById(parentId);
     const tabbableElements = parent.querySelectorAll('input, button, textarea');
     tabbableElements.forEach(element => {
@@ -481,6 +568,11 @@ function setTabbable(parentId) {
     });
 }
 
+/**
+ * Starts the date-time clock. 
+ * The first new Date() isn't really necessary since it can't be seen
+ * initially, but the layout might change later.
+ */
 function initializeClock() {
     elements.static.dateTime.innerText = new Date().toLocaleString();
     setInterval(() => {
@@ -488,4 +580,5 @@ function initializeClock() {
     }, 1000);
 }
 
+// Runs the main function after everything else in the top-level of the js file has run.
 main();
