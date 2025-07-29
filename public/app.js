@@ -574,10 +574,19 @@ function setTabbable(parentId) {
  * initially, but the layout might change later.
  */
 function initializeClock() {
+    const MS_IN_ONE_HOUR = 3600000;
     elements.static.dateTime.innerText = new Date().toLocaleString();
     setInterval(() => {
         elements.static.dateTime.innerText = new Date().toLocaleString();
     }, 1000);
+
+    // Updates the PO Count twice a day for insurance at the start of a new day.
+    setInterval(() => {
+        const hour = new Date().getHours();
+        if (hour > 0 && hour < 3) {
+            updatePoCount();
+        }
+    }, MS_IN_ONE_HOUR);
 }
 
 // Runs the main function after everything else in the top-level of the js file has run.
