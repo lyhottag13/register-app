@@ -1,4 +1,5 @@
-import { currentRegistration, swapScreens, elements } from "../app.js";
+import { currentRegistration, swapScreens } from "../app.js";
+import elements from "./elements.js";
 
 export default async function handleQc2Insert() {
     if (!window.confirm('Insertar valores de QC2?')) {
