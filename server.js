@@ -41,7 +41,7 @@ app.get('/api/testConnection', async (req, res) => {
 
 app.post('/api/poCount', async (req, res) => {
     // Reusable SQL query for the PO counts at the top of the screen.
-    const SQLQuery = 'SELECT count(id_tracker) as poCount FROM test_tracker WHERE po_order LIKE ?';
+    const SQLQuery = 'SELECT count(id_tracker) as poCount FROM test_tracker WHERE UPPER(po_order) LIKE ?';
     const [rowsTotal] = await pool.query(SQLQuery, [req.body.po]);
 
     const today = new Date().toLocaleDateString('en-CA').slice(0, 10); // Date in YYYY-MM-DD format since that's what the DB uses.

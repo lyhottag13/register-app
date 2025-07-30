@@ -119,7 +119,7 @@ async function handleActual() {
     if (poNumberIncomplete === 'CANCEL') {
         return;
     }
-    const poNumber = `po${poNumberIncomplete}`;
+    const poNumber = `PO${poNumberIncomplete}`;
     elements.static.poDiv.innerText = poNumber;
 
     if (poNumber.length !== 10) {
