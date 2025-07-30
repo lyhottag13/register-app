@@ -21,7 +21,7 @@ async function main() {
     }
 
     // Automatically builds the datecode, formatted with the last two year digits and the week number: YYWW.
-    elements.static.datecode.innerText = `Datecode:\n${new Date().toISOString().slice(2, 4) + getISOWeek()}`;
+    elements.static.datecode.innerText = `Datecode:\n${new Date().toISOString().slice(2, 4) + getISOWeek().toString().padStart(2, '0')}`;
 
     // Initializes the clock at the bottom of the screens.
     initializeClock();
