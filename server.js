@@ -70,6 +70,7 @@ app.post('/api/checkRegistration', async (req, res) => {
         res.json({ isValidFirstSend: false, err });
     }
 });
+
 app.post('/api/checkQc2', async (req, res) => {
     // Searches for a corresponding row in qc2 based on the internal ID.
     const sqlStringQc2 = `
@@ -84,6 +85,23 @@ app.post('/api/checkQc2', async (req, res) => {
         res.json({ qc2 });
     } else {
         res.json({ err: 'No hay registros de QC2' });
+    }
+});
+
+app.post('/api/checkQc3', async (req, res) => {
+    // Searches for a corresponding row in qc3 based on the internal ID.
+    const sqlStringQc3 = `
+        SELECT * FROM qc3
+        WHERE Cafetera = ? 
+        AND FinalStatus = 'PASS' 
+        ORDER BY DateTime DESC`;
+
+    // qc3 is returned as an object.
+    const [[qc3]] = await pool.query(sqlStringQc3, [req.body.internalId]);
+    if (qc3) {
+        res.json({ qc3 });
+    } else {
+        res.json({ err: 'No hay registros de QC3' });
     }
 });
 
@@ -120,9 +138,9 @@ app.post('/api/register', async (req, res) => {
             r.qc2.bar_opv, // manometro
             r.qc2.final_status, // This should always be PASS, cafetera
             r.qc2.dual_wall_filter, // filtro
-            r.twoCup, // 2cup
-            r.oneCup, // 1cup
-            r.time, // tiempo
+            r.qc3.twoCup, // 2cup
+            r.qc3.oneCup, // 1cup
+            r.qc3.time, // tiempo
             'PASS',
             'PASS',
             'PASS',
@@ -218,6 +236,50 @@ app.post('/api/insertQc2Fail', async (req, res) => {
         `;
 
         pool.query(sqlString, [qc2.internal_number, qc2.po_number, new Date().toLocaleString('en-CA')]);
+        res.json({ success: true });
+    } catch (err) {
+        console.log(err);
+        res.json({ success: false });
+    }
+});
+
+app.post('/api/insertQc3', async (req, res) => {
+    const { qc3 } = req.body;
+    try {
+        const sqlString = `
+        INSERT INTO qc3 
+        (Cafetera, qc3_1CUP, qc3_2CUP, qc3_Tiempo, qc3_1CUP_r, qc3_2CUP_r,
+        qc3_Tiempo_r, DateTime, FinalStatus)
+            VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+        const values = [
+            qc3.internalId,
+            'PASS',
+            'PASS',
+            'PASS',
+            qc3.oneCup,
+            qc3.twoCup,
+            qc3.time,
+            new Date().toLocaleString('en-CA', { hour12: false }),
+            'PASS'
+        ];
+        pool.query(sqlString, values);
+        res.json({ success: true });
+    } catch (err) {
+        res.json({ success: false });
+    }
+});
+
+app.post('/api/insertQc3Fail', async (req, res) => {
+    const { qc3 } = req.body;
+    try {
+        const sqlString = `
+        INSERT INTO qc2_unregistered (internal_id, po_number, datetime)
+        VALUES (?, ?, ?)
+        `;
+
+        pool.query(sqlString, [qc3.internal_number, qc3.po_number, new Date().toLocaleString('en-CA')]);
         res.json({ success: true });
     } catch (err) {
         console.log(err);

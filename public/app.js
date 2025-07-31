@@ -1,7 +1,9 @@
 import getISOWeek from "./utils/getISOWeek.js";
 import { getPoNumber, createModal, setActivePo } from "./utils/poModal.js";
-import handleQc2Insert, { setQc2Validations, updateQc2FailCount } from "./utils/handleQc2Insert.js";
+import { handleQc2Insert, setQc2Validations, updateQc2FailCount } from "./utils/qc2.js";
+
 import elements from "./utils/elements.js";
+import { handleQc3Insert } from "./utils/qc3.js";
 
 // The current registration represented as an object to hold any number of properties.
 export const currentRegistration = {};
@@ -9,6 +11,7 @@ export const currentRegistration = {};
 let currentScreenIndex = 0; // Tracks the current screen, useful for the back button.
 
 async function main() {
+
     createModal(); // Creates the PO number modal for later use.
 
     // Checks for a successful connection to the database before continuing.
@@ -62,7 +65,9 @@ async function main() {
     elements.controls.continueButton.addEventListener('click', handleContinue);
     elements.controls.submitButton.addEventListener('click', handleSubmit);
     elements.controls.qc2CancelButton.addEventListener('click', () => swapScreens(1));
+    elements.controls.qc3CancelButton.addEventListener('click', () => swapScreens(1));
     elements.controls.qc2SubmitButton.addEventListener('click', handleQc2Insert);
+    elements.controls.qc3SubmitButton.addEventListener('click', handleQc3Insert);
 
     await swapScreens(0);
     reset();
@@ -78,13 +83,13 @@ function setInputValidations() {
     elements.grid1.externalSerial1Input.addEventListener('input', handleSerialNumbers);
     elements.grid1.externalSerial2Input.addEventListener('input', handleSerialNumbers);
     elements.grid1.internalIdInput.addEventListener('input', handleId);
-    elements.grid2.twoCupInput.addEventListener('input', function () {
+    elements.grid4.twoCupInput.addEventListener('input', function () {
         setColorBasedOnRange(this, 75, 105);
     });
-    elements.grid2.oneCupInput.addEventListener('input', function () {
+    elements.grid4.oneCupInput.addEventListener('input', function () {
         setColorBasedOnRange(this, 36, 56);
     });
-    elements.grid2.timeInput.addEventListener('input', function () {
+    elements.grid4.timeInput.addEventListener('input', function () {
         setColorBasedOnRange(this, 11, 21);
     });
 
@@ -177,6 +182,7 @@ async function handleContinue() {
     currentRegistration.datecode = elements.static.datecode.innerText;
 
     const isValidQc2 = await checkQc2();
+    const isValidQc3 = await checkQc3();
     if (!isValidQc2) {
         console.log('Failed QC2 Check!');
         await swapScreens(3);
@@ -184,6 +190,14 @@ async function handleContinue() {
     }
 
     console.log('Successful QC2 Check!');
+
+    if (!isValidQc3) {
+        console.log('Failed QC3 Check!');
+        await swapScreens(4);
+        return;
+    }
+
+    console.log('Successful QC3 Check!');
     await swapScreens(2);
 }
 
@@ -203,9 +217,6 @@ async function handleSubmit() {
     }
 
     console.log('Successful Second Screen!');
-    currentRegistration.twoCup = elements.grid2.twoCupInput.value;
-    currentRegistration.time = elements.grid2.timeInput.value;
-    currentRegistration.oneCup = elements.grid2.oneCupInput.value;
     currentRegistration.rework = elements.grid2.reworkCheckBox.value;
     currentRegistration.notes = elements.grid2.notesInput.value;
 
@@ -224,20 +235,24 @@ async function handleSubmit() {
 
 async function updatePoCount() {
     elements.controls.closeOrderButton.disabled = true;
-    const poCount = await (await fetch('/api/poCount', {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            po: elements.static.poDiv.innerText
-        })
-    })).json();
-    elements.static.poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
-    elements.static.poCountTodayDiv.innerText = `Hoy:\n${poCount.poCountToday}`;
-    // Allows the user to close the order when poCount is over 1115, since the program needs to know when to begin a new order.
-    if (poCount.poCountTotal >= 1115) {
-        elements.controls.closeOrderButton.disabled = false;
+    try {
+        const poCount = await (await fetch('/api/poCount', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                po: elements.static.poDiv.innerText
+            })
+        })).json();
+        elements.static.poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
+        elements.static.poCountTodayDiv.innerText = `Hoy:\n${poCount.poCountToday}`;
+        // Allows the user to close the order when poCount is over 1115, since the program needs to know when to begin a new order.
+        if (poCount.poCountTotal >= 1115) {
+            elements.controls.closeOrderButton.disabled = false;
+        }
+    } catch (err)  {
+        window.alert('Something went wrong with the PO FETCH!');
     }
 }
 
@@ -298,15 +313,30 @@ async function checkRegistration() {
 async function checkQc2() {
     const data = await (await fetch('/api/checkQc2', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            internalId: elements.grid1.internalIdInput.value
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ internalId: elements.grid1.internalIdInput.value })
     })).json();
     if (data.qc2) {
         currentRegistration.qc2 = data.qc2;
+        return true;
+    } else {
+        window.alert(data.err);
+        return false;
+    }
+}
+
+async function checkQc3() {
+    const data = await (await fetch('/api/checkQc3', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ internalId: elements.grid1.internalIdInput.value })
+    })).json();
+    if (data.qc3) {
+        currentRegistration.qc3 = {
+            oneCup: data.qc3.qc3_1CUP_r,
+            twoCup: data.qc3.qc3_2CUP_r,
+            time: data.qc3.qc3_Tiempo_r
+        };
         return true;
     } else {
         window.alert(data.err);
@@ -324,15 +354,6 @@ async function checkQc2() {
 async function checkSecondScreen() {
     let errorMessage = '';
 
-    if (elements.grid2.twoCupInput.value < 75 || elements.grid2.twoCupInput.value > 105) {
-        errorMessage += 'Valor de QC3 2 Cup inválido\n';
-    }
-    if (elements.grid2.timeInput.value < 11 || elements.grid2.timeInput.value > 21) {
-        errorMessage += 'Valor de QC3 Tiempo inválido\n';
-    }
-    if (elements.grid2.oneCupInput.value < 36 || elements.grid2.oneCupInput.value > 56) {
-        errorMessage += 'Valor de QC3 1 Cup inválido\n';
-    }
     if (!elements.grid2.otherTestCheckBox.value) {
         errorMessage += 'Otras pruebas inválidas\n';
     }
@@ -382,9 +403,11 @@ export async function swapScreens(nextScreenIndex) {
     currentScreenIndex = nextScreenIndex;
 
     if (nextScreenIndex === 3) {
-        movingScreen.style.transform = `translateX(-100vw) translateY(-100vh)`;
+        movingScreen.style.transform = `translateX(-100vw) translateY(-200vh)`;
+    } else if (nextScreenIndex === 4) {
+        movingScreen.style.transform = `translateX(-100vw)`;
     } else {
-        movingScreen.style.transform = `translateX(-${nextScreenIndex * 100}vw)`;
+        movingScreen.style.transform = `translateX(-${nextScreenIndex * 100}vw) translateY(-100vh)`;
     }
 
     if (nextScreenIndex > 0) {
@@ -405,9 +428,11 @@ export async function swapScreens(nextScreenIndex) {
     if (nextScreenIndex === 1) {
         elements.grid1.internalSerialInput.focus();
     } else if (nextScreenIndex === 2) {
-        elements.grid2.twoCupInput.focus();
+        elements.grid2.notesInput.focus();
     } else if (nextScreenIndex === 3) {
         elements.grid3.initialWattageInput.focus();
+    } else if (nextScreenIndex === 4) {
+        elements.grid4.twoCupInput.focus();
     }
 
     setTabbable(`screen-${nextScreenIndex}`);
@@ -423,6 +448,8 @@ function setButtonActionListeners(nextScreenIndex) {
         document.removeEventListener('keypress', handleSubmitKeyPress);
     } else if (currentScreenIndex === 3) {
         document.removeEventListener('keypress', handleQc2SubmitKeyPress);
+    } else if (currentScreenIndex === 4) {
+        document.removeEventListener('keypress', handleQc3SubmitKeyPress);
     }
 
     // Adds the Enter key listeners to the next screen's buttons.
@@ -434,6 +461,8 @@ function setButtonActionListeners(nextScreenIndex) {
         document.addEventListener('keypress', handleSubmitKeyPress);
     } else if (nextScreenIndex === 3) {
         document.addEventListener('keypress', handleQc2SubmitKeyPress);
+    } else if (nextScreenIndex === 4) {
+        document.addEventListener('keypress', handleQc3SubmitKeyPress);
     }
 }
 
@@ -461,6 +490,12 @@ function handleQc2SubmitKeyPress(e) {
         handleQc2Insert();
     }
 }
+function handleQc3SubmitKeyPress(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        handleQc3Insert();
+    }
+}
 
 /**
  * Resets all the inputs: ID, serials, QC2s, QC3s, and the checkboxes.
@@ -474,12 +509,12 @@ function reset() {
     elements.grid1.externalSerial2Input.style.backgroundColor = 'rgba(255, 77, 77, 1)';
     elements.grid1.internalIdInput.value = '';
     elements.grid1.internalIdInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
-    elements.grid2.twoCupInput.value = '';
-    elements.grid2.twoCupInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
-    elements.grid2.oneCupInput.value = '';
-    elements.grid2.oneCupInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
-    elements.grid2.timeInput.value = '';
-    elements.grid2.timeInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+    elements.grid4.twoCupInput.value = '';
+    elements.grid4.twoCupInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+    elements.grid4.oneCupInput.value = '';
+    elements.grid4.oneCupInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
+    elements.grid4.timeInput.value = '';
+    elements.grid4.timeInput.style.backgroundColor = 'rgba(255, 77, 77, 1)';
     elements.grid3.initialWattageInput.value = '';
     elements.grid3.pumpWattageInput.value = '';
     elements.grid3.heatingInput.value = '';

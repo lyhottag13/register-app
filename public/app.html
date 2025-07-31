@@ -49,9 +49,7 @@
             </div>
             <div id="screen-2" class="screen">
                 <div class="center-grid">
-                    <input id="qc3-2-cup" placeholder="QC3 2 Cup" class="number" maxlength="5">
-                    <input id="qc3-time" placeholder="QC3 Tiempo" class="number" maxlength="5">
-                    <input id="qc3-1-cup" placeholder="QC3 1 Cup" class="number" maxlength="5">
+                    <textarea id="notes" placeholder="Commentarios"></textarea>
                     <div id="checkBoxesPanel">
                         <label id="other-tests">
                             Otras Pruebas:
@@ -63,23 +61,37 @@
                 </div>
                 <div id="buttons-2" class="buttons">
                     <button id="back-2" class="back">Regresar</button>
-                    <textarea id="notes" placeholder="Commentarios"></textarea>
+                    <div></div>
                     <button id="submit">Enviar</button>
                 </div>
             </div>
             <div id="screen-3" class="screen">
                 <div class="center-grid">
-                    <input type="text" id="initial-wattage" class="number" placeholder="Conectado" maxlength="5">
-                    <input type="text" id="pump-wattage" class="number" placeholder="Inicial Pump" maxlength="5">
-                    <input type="text" id="heating" class="number" placeholder="Thermocoil" maxlength="5">
-                    <input type="text" id="heating-time" class="number" placeholder="Tiempo" maxlength="5">
-                    <input type="text" id="bar-opv" class="number" placeholder="Manometro" maxlength="5">
-                    <input type="text" id="dual-wall-filter" class="number" placeholder="Filtro" maxlength="5">
+                    <input type="text" id="initial-wattage" class="number" placeholder="Conectado (0.6-1.0)" maxlength="5">
+                    <input type="text" id="pump-wattage" class="number" placeholder="Inicial Pump (35-58)" maxlength="5">
+                    <input type="text" id="heating" class="number" placeholder="Thermocoil (1440-1650)" maxlength="5">
+                    <input type="text" id="heating-time" class="number" placeholder="Tiempo (<55)" maxlength="5">
+                    <input type="text" id="bar-opv" class="number" placeholder="Manometro (8.5-11.5)" maxlength="5">
+                    <input type="text" id="dual-wall-filter" class="number" placeholder="Filtro (>5)" maxlength="5">
                     <div class="buttons">
                         <button id="back-3">Cancelar</button>
                         <!-- Empty div to pad out the .buttons template -->
                         <div></div>
                         <button id="submit-qc2">Enviar</button>
+                    </div>
+                </div>
+            </div>
+            <div id="screen-4" class="screen">
+                <div class="center-grid">
+                    <input id="qc3-2-cup" placeholder="QC3 2 Cup (75-105)" class="number" maxlength="5">
+                    <input id="qc3-time" placeholder="QC3 Tiempo (11-21)" class="number" maxlength="5">
+                    <input id="qc3-1-cup" placeholder="QC3 1 Cup (36-56)" class="number" maxlength="5">
+                    <div></div>
+                    <div class="buttons">
+                        <button id="back-4">Cancelar</button>
+                        <!-- Empty div to pad out the .buttons template -->
+                        <div></div>
+                        <button id="submit-qc3">Enviar</button>
                     </div>
                 </div>
             </div>

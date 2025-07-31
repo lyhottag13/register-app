@@ -1,7 +1,7 @@
 import { currentRegistration, swapScreens } from "../app.js";
 import elements from "./elements.js";
 
-export default async function handleQc2Insert() {
+export async function handleQc2Insert() {
     if (!window.confirm('Insertar valores de QC2?')) {
         return;
     }
@@ -25,7 +25,16 @@ export default async function handleQc2Insert() {
         return;
     }
     currentRegistration.qc2 = qc2;
-    await swapScreens(2);
+
+    // If currentRegistration has qc3, then we want to go to the final screen, else we submit a qc3.
+    console.log(currentRegistration.qc3);
+    if (currentRegistration.qc3) {
+        console.log('hey1')
+        await swapScreens(2);
+    } else {
+        console.log('hey2');
+        await swapScreens(4);
+    }
     updateQc2FailCount();
 }
 
@@ -69,17 +78,13 @@ async function checkQc2Values() {
 async function sendQc2Values(qc2) {
     const insertQc2Data = await (await fetch('/api/insertQc2', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ qc2 })
     })).json();
 
     const insertQc2FailData = await (await fetch('/api/insertQc2Fail', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ qc2 })
     })).json();
 

@@ -10,6 +10,8 @@ const elements = {
         submitButton: document.getElementById('submit'),
         qc2CancelButton: document.getElementById('back-3'),
         qc2SubmitButton: document.getElementById('submit-qc2'),
+        qc3CancelButton: document.getElementById('back-4'),
+        qc3SubmitButton: document.getElementById('submit-qc3'),
     },
 
     // First grid inputs
@@ -22,9 +24,6 @@ const elements = {
 
     // Second grid inputs
     grid2: {
-        twoCupInput: document.getElementById('qc3-2-cup'),
-        timeInput: document.getElementById('qc3-time'),
-        oneCupInput: document.getElementById('qc3-1-cup'),
         otherTestCheckBox: new Slider(document.getElementById('other-tests'), false),
         reworkCheckBox: new Slider(document.getElementById('rework'), false),
         notesInput: document.getElementById('notes'),
@@ -38,6 +37,13 @@ const elements = {
         heatingTimeInput: document.getElementById("heating-time"),
         barOpvInput: document.getElementById("bar-opv"),
         dualWallFilterInput: document.getElementById("dual-wall-filter"),
+    },
+    
+    // Fourth grid's inputs.
+    grid4: {
+        twoCupInput: document.getElementById('qc3-2-cup'),
+        timeInput: document.getElementById('qc3-time'),
+        oneCupInput: document.getElementById('qc3-1-cup'),
     },
 
     // Static elements
