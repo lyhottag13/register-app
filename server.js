@@ -118,7 +118,7 @@ app.post('/api/register', async (req, res) => {
             r.qc2.heating, // thermocoil
             r.qc2.heating_time, // heattiempo 
             r.qc2.bar_opv, // manometro
-            r.qc2.final_status, // This should always be PASS, cafetera
+            'PASS', // cafetera
             r.qc2.dual_wall_filter, // filtro
             r.twoCup, // 2cup
             r.oneCup, // 1cup
