@@ -238,12 +238,8 @@ async function updatePoCount() {
     try {
         const poCount = await (await fetch('/api/poCount', {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                po: elements.static.poDiv.innerText
-            })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ po: elements.static.poDiv.innerText })
         })).json();
         elements.static.poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
         elements.static.poCountTodayDiv.innerText = `Hoy:\n${poCount.poCountToday}`;
@@ -299,9 +295,7 @@ async function checkFirstScreen() {
 async function checkRegistration() {
     const data = await (await fetch('/api/checkRegistration', {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             serialNumber: elements.grid1.internalSerialInput.value,
             internalId: elements.grid1.internalIdInput.value

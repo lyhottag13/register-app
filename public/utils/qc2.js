@@ -5,11 +5,7 @@ export async function handleQc2Insert() {
     if (!window.confirm('Insertar valores de QC2?')) {
         return;
     }
-    const isValidQc2Values = await checkQc2Values();
-    if (!isValidQc2Values) {
-        return;
-    }
-    const qc2 = {
+    const potentialQc2 = {
         po_number: elements.static.poDiv.innerText,
         internal_number: currentRegistration.internalId,
         initial_wattage: elements.grid3.initialWattageInput.value,
@@ -19,60 +15,52 @@ export async function handleQc2Insert() {
         bar_opv: elements.grid3.barOpvInput.value,
         dual_wall_filter: elements.grid3.dualWallFilterInput.value,
     }
-
-    const isSuccessfulQc2Send = await sendQc2Values(qc2);
-    if (!isSuccessfulQc2Send) {
+    const qc2ValuesData = await checkQc2Values(potentialQc2);
+    if (qc2ValuesData.err) {
+        window.alert(qc2ValuesData.err);
         return;
     }
-    currentRegistration.qc2 = qc2;
+
+    const qc2SendData = await sendQc2Values(potentialQc2);
+    if (qc2SendData.err) {
+        window.alert(qc2SendData.err);
+        return;
+    }
+    currentRegistration.qc2 = potentialQc2;
 
     // If currentRegistration has qc3, then we want to go to the final screen, else we submit a qc3.
     console.log(currentRegistration.qc3);
     if (currentRegistration.qc3) {
-        console.log('hey1')
         await swapScreens(2);
     } else {
-        console.log('hey2');
         await swapScreens(4);
     }
     updateQc2FailCount();
 }
 
-async function checkQc2Values() {
-    let errorMessage = '';
-
-    const initialWattage = elements.grid3.initialWattageInput.value;
-    const pumpWattage = elements.grid3.pumpWattageInput.value;
-    const heating = elements.grid3.heatingInput.value;
-    const heatingTime = elements.grid3.heatingTimeInput.value;
-    const barOpv = elements.grid3.barOpvInput.value;
-    const dualWallFilter = elements.grid3.dualWallFilterInput.value;
+async function checkQc2Values(qc2) {
+    let err = '';
 
     // Validates the six user inputs against Breville's standards of excellence.
-    if (initialWattage < 0.6 || initialWattage > 1) {
-        errorMessage += 'Conectado invalido\n';
+    if (qc2.initial_wattage < 0.6 || qc2.initial_wattage > 1) {
+        err += 'Conectado invalido\n';
     }
-    if (pumpWattage < 35 || pumpWattage > 58) {
-        errorMessage += 'Inicial Pump invalido\n';
+    if (qc2.pump_wattage < 35 || qc2.pump_wattage > 58) {
+        err += 'Inicial Pump invalido\n';
     }
-    if (heating < 1440 || heating > 1650) {
-        errorMessage += 'Thermocoil invalido\n';
+    if (qc2.heating < 1440 || qc2.heating > 1650) {
+        err += 'Thermocoil invalido\n';
     }
-    if (heatingTime > 55) {
-        errorMessage += 'Tiempo invalido\n';
+    if (qc2.heating_time > 55) {
+        err += 'Tiempo invalido\n';
     }
-    if (barOpv < 8.5 || barOpv > 11.5) {
-        errorMessage += 'Manometro presion invalido\n';
+    if (qc2.bar_opv < 8.5 || qc2.bar_opv > 11.5) {
+        err += 'Manometro presion invalido\n';
     }
-    if (dualWallFilter < 5) {
-        errorMessage += 'Filtro presion invalido';
+    if (qc2.dual_wall_filter < 5) {
+        err += 'Presion de filtro invalido';
     }
-
-    if (errorMessage) {
-        window.alert(errorMessage);
-        return false;
-    }
-    return true;
+    return { err };
 }
 
 async function sendQc2Values(qc2) {
@@ -96,11 +84,7 @@ async function sendQc2Values(qc2) {
     if (!insertQc2FailData.success) {
         qc2Err += 'No se pudo insertar en qc2_unregistered.\n';
     }
-    if (qc2Err) {
-        window.alert(qc2Err);
-        return false;
-    }
-    return true;
+    return { qc2Err };
 }
 
 export async function updateQc2FailCount() {
