@@ -19,16 +19,7 @@ set /p port=What's the desired localhost port?
 
 echo export default %port%; > src\port.js
 
-echo ^<?xml version="1.0" encoding="UTF-8"?^> > web.config
-echo ^<configuration^> >> web.config
-echo   ^<system.webServer^> >> web.config
-echo     ^<rewrite^> >> web.config
-echo       ^<rules^> >> web.config
-echo         ^<rule name="ReverseProxyInboundRule1" stopProcessing="true"^> >> web.config
-echo           ^<match url="(.*)" /^> >> web.config
-echo           ^<action type="Rewrite" url="http://localhost:%port%/{R:1}" /^> >> web.config
-echo         ^</rule^> >> web.config
-echo       ^</rules^> >> web.config
-echo     ^</rewrite^> >> web.config
-echo   ^</system.webServer^> >> web.config
-echo ^</configuration^> >> web.config
+CALL pm2 delete register
+CALL pm2 start server.js --name register
+CALL pm2 save
+PAUSE
