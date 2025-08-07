@@ -13,17 +13,15 @@ async function main() {
 
     // Checks for a successful connection to the database before continuing.
     const { connectionSuccessful } = await (await fetch('/api/testConnection')).json();
-    if (connectionSuccessful) {
-        window.alert('Conexion exitosa');
-    } else {
-        window.alert('Conexion fallada');
-        return;
+    if (!connectionSuccessful) {
+        return window.alert('Conexion fallada');
     }
+    window.alert('Conexion exitosa');
 
     // Automatically builds the datecode, formatted with the last two year digits and the week number: YYWW.
     elements.static.datecode.innerText = `Datecode:\n${new Date().toISOString().slice(2, 4) + getISOWeek().toString().padStart(2, '0')}`;
 
-    // Initializes the clock at the bottom of the screens.
+    // Initializes the clock at the bottom of the screen.
     initializeClock();
 
     // Forces every number input to receive only numbers and ONE decimal point through regex.
@@ -53,9 +51,7 @@ async function main() {
     setInputValidations();
     setQc2Validations();
 
-    document.querySelectorAll('.back').forEach(element => {
-        element.addEventListener('click', handleBack);
-    });
+    document.querySelectorAll('.back').forEach(element => element.addEventListener('click', handleBack));
 
     elements.controls.actualButton.addEventListener('click', handleActual);
     elements.controls.closeOrderButton.addEventListener('click', handleCloseOrder);
@@ -63,6 +59,7 @@ async function main() {
     elements.controls.submitButton.addEventListener('click', handleSubmit);
     elements.controls.qc2CancelButton.addEventListener('click', () => swapScreens(1));
     elements.controls.qc2SubmitButton.addEventListener('click', handleQc2Insert);
+    elements.controls.specialButton.addEventListener('click', handleSpecial);
 
     await swapScreens(0);
     reset();
@@ -132,6 +129,10 @@ async function handleActual() {
         updateQc2FailCount();
         await swapScreens(1);
     }
+}
+
+async function handleSpecial() {
+    
 }
 
 /**
@@ -354,9 +355,7 @@ async function checkSecondScreen() {
 async function sendRegistration() {
     const data = await (await fetch('/api/register', {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             currentRegistration
         })

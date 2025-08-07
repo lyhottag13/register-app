@@ -25,6 +25,7 @@
   width: 80%;
   gap: 10%;
   grid-template-columns: 1fr 1fr;
+  font-family: 'Segoe UI';
 }
 #po-buttons button {
   height: 100%;
@@ -32,6 +33,7 @@
   border-radius: 20px;
   padding: 10px;
   border: 0;
+  font-size: 40px;
 }
 
 #po-buttons button:nth-child(1) {
@@ -47,4 +49,7 @@
 #po-input {
   margin-top: 20px;
   border-radius: 20px;
+  font-size: 70px;
+  width: 30vw;
+  text-align: center;
 }

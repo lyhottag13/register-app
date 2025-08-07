@@ -10,7 +10,7 @@ export function createModal() {
     poInput.id = 'po-input';
     label.id = 'po-label';
     buttonHolder.id = 'po-buttons';
-    label.innerText = 'Ingresa Numero de PO:\n(8 digitos)';
+    label.innerText = 'Ingresa Numero de PO:\n(8 digitos)\n';
 
     cancel.innerText = 'Cancelar';
     confirm.innerText = 'Confirmar';
