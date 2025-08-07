@@ -96,12 +96,8 @@ async function getActivePo() {
 export async function setActivePo(po) {
     const { isValid, err } = await (await fetch('/api/setActivePo', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            po
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ po })
     })).json();
     if (!isValid) {
         window.alert(err);

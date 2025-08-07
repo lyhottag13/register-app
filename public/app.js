@@ -132,7 +132,14 @@ async function handleActual() {
 }
 
 async function handleSpecial() {
-    
+    const specialPo = window.prompt('Special PO Please.');
+    if (!specialPo) {
+        return;
+    }
+    elements.static.poDiv.innerText = specialPo.toUpperCase();
+    updatePoCount();
+    updateQc2FailCount();
+    await swapScreens(1);
 }
 
 /**
@@ -218,7 +225,11 @@ async function handleSubmit() {
 
     console.log('Successful Submit!');
     reset();
-    await swapScreens(1);
+    if (elements.static.poDiv.innerText.startsWith('PO')) {
+        await swapScreens(1);
+    } else {
+        await swapScreens(0);
+    }
     // This update can't be instant since the database submit needs time to go through.
     updatePoCount();
 }
@@ -368,6 +379,7 @@ async function sendRegistration() {
     }
 }
 
+let isSwapping = false;
 /**
  * Swaps between the main screens. Index 0 is the two-button actual/special screen,
  * 1 is the first user input screen, and 2 is the second user input screen.
@@ -391,23 +403,31 @@ export async function swapScreens(nextScreenIndex) {
         elements.static.staticElementsBottom.style.transform = 'translateY(100vh) translateY(-100%)';
     } else {
         elements.static.staticElementsTop.style.transform = 'translateY(-100%)';
-        elements.static.staticElementsBottom.style.transform = 'translateY(100vh)';
+        elements.static.staticElementsBottom.style.transform = 'translateY(100vh) translateY(20%)';
     }
+
     // Returns when the screen has finished transitioning, useful for .focus() updates.
+    isSwapping = true;
     await new Promise(resolve => {
         movingScreen.addEventListener('transitionend', function handler(e) {
             movingScreen.removeEventListener('transitionend', handler);
-            resolve(true);
+            resolve();
         });
     });
 
-    if (nextScreenIndex === 1) {
-        elements.grid1.internalSerialInput.focus();
-    } else if (nextScreenIndex === 2) {
-        elements.grid2.twoCupInput.focus();
-    } else if (nextScreenIndex === 3) {
-        elements.grid3.initialWattageInput.focus();
+    isSwapping = false;
+    if (!isSwapping) {
+        if (nextScreenIndex === 1) {
+            elements.grid1.internalSerialInput.focus();
+        } else if (nextScreenIndex === 2) {
+            elements.grid2.twoCupInput.focus();
+        } else if (nextScreenIndex === 3) {
+            elements.grid3.initialWattageInput.focus();
+        }
     }
+
+    // Prevents the screen from scrolling out of bounds when focusing.
+    window.scroll(0, 0);
 
     setTabbable(`screen-${nextScreenIndex}`);
 }

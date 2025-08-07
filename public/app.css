@@ -65,6 +65,7 @@ body {
     align-items: center;
     color: white;
     width: 100vw;
+    height: 10vh;
     font-size: 40px;
     z-index: 100;
 }
