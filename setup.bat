@@ -22,4 +22,5 @@ echo export default %port%; > src\port.js
 CALL pm2 delete register
 CALL pm2 start server.js --name register
 CALL pm2 save
+echo Successful setup.
 PAUSE

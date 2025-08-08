@@ -146,11 +146,11 @@ async function handleSpecial() {
     }
 
     // Returns if there already exists a closed PO with this specialPo.
-    const closedData = await checkClosed(specialPo);
-    if (closedData.err) {
-        window.alert(closedData.err);
-        return;
-    }
+    // const closedData = await checkClosed(specialPo);
+    // if (closedData.err) {
+    //     window.alert(closedData.err);
+    //     return;
+    // }
 
     // Continues with the registration process.
     elements.static.poDiv.innerText = specialPo.toUpperCase();
@@ -501,9 +501,7 @@ export async function swapScreens(nextScreenIndex) {
 
 function setButtonActionListeners(nextScreenIndex) {
     // Removes the Enter key event listeners from the previous screen's buttons.
-    if (currentScreenIndex === 0) {
-        document.removeEventListener('keypress', handleActualKeyPress);
-    } else if (currentScreenIndex === 1) {
+    if (currentScreenIndex === 1) {
         document.removeEventListener('keypress', handleContinueKeyPress);
     } else if (currentScreenIndex === 2) {
         document.removeEventListener('keypress', handleSubmitKeyPress);
@@ -512,21 +510,12 @@ function setButtonActionListeners(nextScreenIndex) {
     }
 
     // Adds the Enter key listeners to the next screen's buttons.
-    if (nextScreenIndex === 0) {
-        document.addEventListener('keypress', handleActualKeyPress);
-    } else if (nextScreenIndex === 1) {
+    if (nextScreenIndex === 1) {
         document.addEventListener('keypress', handleContinueKeyPress);
     } else if (nextScreenIndex === 2) {
         document.addEventListener('keypress', handleSubmitKeyPress);
     } else if (nextScreenIndex === 3) {
         document.addEventListener('keypress', handleQc2SubmitKeyPress);
-    }
-}
-
-function handleActualKeyPress(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        handleActual();
     }
 }
 function handleSubmitKeyPress(e) {
