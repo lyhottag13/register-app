@@ -145,19 +145,40 @@ app.get('/api/getActivePo', async (req, res) => {
     res.json(activePo);
 });
 
-app.get('/api/closeOrder', async (req, res) => {
-    const [[{ po_order: oldPo }]] = await pool.query(`
-        SELECT po_order FROM po_list WHERE id = 1;
-    `);
-    const [[{ numberOfRegistrations }]] = await pool.query(`
-        SELECT COUNT(CASE WHEN po_order LIKE ? THEN 1 END) as numberOfRegistrations FROM test_tracker
-    `, [oldPo]);
-    await pool.query(`
-        UPDATE po_list SET po_order = NULL WHERE id = 1;
-    `);
-    await pool.query(`
-        INSERT INTO po_list (po_order, registrations) VALUES (?, ?)
-    `, [oldPo, numberOfRegistrations]);
+app.post('/api/closeOrder', async (req, res) => {
+    try {
+        const { specialPo } = req.body;
+        let oldPo;
+        if (!specialPo) {
+            // Selects the current non-special PO order.
+            const [rows] = await pool.query(`
+                SELECT po_order FROM po_list WHERE id = 1;
+            `);
+
+            // Sets the oldPo to the selected PO.
+            oldPo = rows[0].po_order;
+
+            // Sets the current non-special PO to null, so that the system recognizes that a new PO can be entered.
+            await pool.query(`
+                UPDATE po_list SET po_order = NULL WHERE id = 1;
+            `);
+        } else {
+            oldPo = specialPo; // Uses the specialPo, if there is any.
+        }
+
+        // Counts how many registrations were completed with the old PO.
+        const [[{ numberOfRegistrations }]] = await pool.query(`
+            SELECT COUNT(CASE WHEN po_order LIKE ? THEN 1 END) as numberOfRegistrations FROM test_tracker
+        `, [oldPo]);
+
+        // Enters a new row into the list of POs with the old PO and its registrations.
+        await pool.query(`
+            INSERT INTO po_list (po_order, registrations) VALUES (?, ?)
+        `, [oldPo, numberOfRegistrations]);
+        res.status(200).json({});
+    } catch (err) {
+        res.status(500).json({ err: err.sqlMessage || err.message });
+    }
 });
 
 app.post('/api/setActivePo', async (req, res) => {
@@ -168,6 +189,21 @@ app.post('/api/setActivePo', async (req, res) => {
     } catch (err) {
         res.json({ isValid: false, err: 'Orden de compra ya cerrada.' });
     }
+});
+
+app.post('/api/po/select', async (req, res) => {
+    try {
+        const { po } = req.body;
+        const [rows] = await pool.query('SELECT 1 FROM po_list WHERE po_order = ?', [po]);
+        if (rows[0]) {
+            return res.status(400).json({ err: 'Ya existe una orden cerrada con este PO.\nSi necesita ingresar esta orden, consulte a su supervisor.' });
+        }
+        return res.status(200).json({});
+    } catch (err) {
+        console.log(err.stack);
+        return res.status(500).json({ err: err.message || err.sqlMessage });
+    }
+
 });
 
 app.post('/api/insertQc2', async (req, res) => {

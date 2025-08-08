@@ -131,11 +131,28 @@ async function handleActual() {
     }
 }
 
+/**
+ * Handles the Special PO button. The user can input any PO name here, since
+ * the special POs aren't limited to just numbers. We're giving the user a lot
+ * of trust through this function.
+ * @returns {void} Used to exit the function.
+ */
 async function handleSpecial() {
-    const specialPo = window.prompt('Special PO Please.');
+    const specialPo = window.prompt('Ingresa el nombre de la PO:');
+
+    // Returns if the user cancels the Special PO input.
     if (!specialPo) {
         return;
     }
+
+    // Returns if there already exists a closed PO with this specialPo.
+    const closedData = await checkClosed(specialPo);
+    if (closedData.err) {
+        window.alert(closedData.err);
+        return;
+    }
+
+    // Continues with the registration process.
     elements.static.poDiv.innerText = specialPo.toUpperCase();
     updatePoCount();
     updateQc2FailCount();
@@ -157,13 +174,33 @@ async function handleBack() {
 /**
  * Handles the closeOrderButton. Sends out an API call to close the order,
  * which the server follows through on.
+ * @returns {{err: string} | {}} An error, if there is any.
  */
 async function handleCloseOrder() {
-    if (window.confirm('Cerrar orden?')) {
-        fetch('/api/closeOrder');
+    try {
+        if (!window.confirm('Cerrar orden?')) {
+            return {};
+        }
+        const isSpecialPo = elements.static.poDiv.innerText.slice(0, 2) !== 'PO';
+        let specialPo;
+        if (isSpecialPo) {
+            specialPo = elements.static.poDiv.innerText;
+        }
+        const response = await fetch('/api/closeOrder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ specialPo })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.err || 'Something went wrong with closing the order.');
+        }
         elements.controls.closeOrderButton.disabled = true;
-        swapScreens(0);
-        setTabbable('screen-0');
+        await swapScreens(0);
+        return {};
+    } catch (err) {
+        console.log(err.stack);
+        window.alert(err.message);
     }
 }
 
@@ -234,6 +271,27 @@ async function handleSubmit() {
     updatePoCount();
 }
 
+async function checkClosed(po) {
+    try {
+        const response = await fetch('/api/po/select', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ po })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.err || 'Something went wrong with checking the closed status');
+        }
+        return {};
+    } catch (err) {
+        console.log(err.stack);
+        return { err: err.message };
+    }
+}
+
+/**
+ * Updates the PO count at the top of the screen.
+ */
 async function updatePoCount() {
     elements.controls.closeOrderButton.disabled = true;
     const poCount = await (await fetch('/api/poCount', {
@@ -247,15 +305,24 @@ async function updatePoCount() {
     })).json();
     elements.static.poCountTotalDiv.innerText = `Total:\n${poCount.poCountTotal}`;
     elements.static.poCountTodayDiv.innerText = `Hoy:\n${poCount.poCountToday}`;
-    // Allows the user to close the order when poCount is over 1115, since the program needs to know when to begin a new order.
-    if (poCount.poCountTotal >= 1115) {
+
+    const isSpecialPo = elements.static.poDiv.innerText.slice(0, 2) !== 'PO';
+    /* 
+    Allows the user to close the order when poCount is over 1115 since the 
+    program needs to know when to begin a new order. However, you can also
+    close the PO from ANY number of registrations through a special PO, 
+    which might cause a user to accidentally close a special PO that's still
+    in use. In this case, an administrator would have to enter the MySQL
+    database and manually remove the closed special PO from the po_list table.
+    */
+    if (poCount.poCountTotal >= 1115 || isSpecialPo) {
         elements.controls.closeOrderButton.disabled = false;
     }
 }
 
 /**
  * Checks to see if the user inputs in the first screen are valid for the application.
- * @returns Whether or not the first screen's inputs are valid.
+ * @returns {boolean} Whether the first screen's inputs are valid.
  */
 async function checkFirstScreen() {
     let errorMessage = '';
